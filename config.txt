@@ -1,0 +1,2 @@
+TOKEN=your-discord-bot-token-here
+APPLICATION_ID=your-applicationid-here

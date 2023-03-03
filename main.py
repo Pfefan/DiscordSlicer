@@ -1,5 +1,4 @@
 """Main class to initialize the programm"""
-import json
 import os
 import sys
 

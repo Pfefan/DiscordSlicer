@@ -3,6 +3,9 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from handlers.upload_file import Upload_Service
+from handlers.download_file import Download_Service
+
 
 class Commandhandler(commands.Cog):
     """discord commands"""
@@ -10,12 +13,8 @@ class Commandhandler(commands.Cog):
     def __init__(self, bot: commands.Bot):
         """init func"""
         self.bot = bot
-        self.onlookup = serverlookup_on.Lookup()
-        self.onlinecmd = showembed_on.OnEmbed()
-        self.detailscmd = details.Details()
-        self.watchserver = playeraktivitycmd.Main()
-        self.autorun = autorun.Autorun()
-        self.listcmd = liston.Listserver()
+        self.upload_file = Upload_Service()
+        self.download_file = Download_Service()
 
     @app_commands.command(
         name = "upload-file",
@@ -23,7 +22,7 @@ class Commandhandler(commands.Cog):
 
     async def upload(self, interaction: discord.Interaction, filepath:str):
         """command to List specific servers"""
-        await self.listcmd.main(interaction, filepath)
+        await self.upload_file.main(interaction, filepath)
 
     @app_commands.command(
         name = "download-file",
@@ -31,7 +30,7 @@ class Commandhandler(commands.Cog):
 
     async def download (self, interaction: discord.Interaction, filedest:str):
         """command to get servers with players online"""
-        await self.onlinecmd.sortdata(interaction, filedest)
+        print("download")
 
 
 async def setup(bot: commands.Bot) -> None:

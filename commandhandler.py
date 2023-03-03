@@ -28,9 +28,9 @@ class Commandhandler(commands.Cog):
         name = "download-file",
         description = "Downloads a file from discord")
 
-    async def download (self, interaction: discord.Interaction, filedest:str):
+    async def download (self, interaction: discord.Interaction, filename:str):
         """command to get servers with players online"""
-        print("download")
+        await self.download_file.main(interaction, filename)
 
 
 async def setup(bot: commands.Bot) -> None:

@@ -24,7 +24,7 @@ class Upload_Service():
         with open(path, 'rb') as f:
             for i in range(num_chunks):
                 chunk_data = f.read(self.chunk_size)
-                chunk_filename = f'chunks/{filename}/{filename}.{i}'
+                chunk_filename = f'chunks/{filename}/{i}'
                 with open(chunk_filename, 'wb') as chunk_file:
                     try:
                         chunk_file.write(chunk_data)
@@ -81,3 +81,4 @@ class Upload_Service():
                 shutil.rmtree(f"chunks/{filename}")
         else:
             self.logger.error("File %s doesnt exist", path)
+            await interaction.edit_original_response(content=f"File {path} doesnt exist")

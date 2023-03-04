@@ -13,7 +13,7 @@ class Upload_Service():
         filename = os.path.basename(path)
         file_size = os.stat(path).st_size
 
-        os.makedirs(f'chunks/{filename}')
+        os.makedirs(f'files/upload/{filename}')
 
         num_chunks = file_size // self.chunk_size
         if file_size % self.chunk_size != 0:
@@ -24,7 +24,7 @@ class Upload_Service():
         with open(path, 'rb') as f:
             for i in range(num_chunks):
                 chunk_data = f.read(self.chunk_size)
-                chunk_filename = f'chunks/{filename}/{i}'
+                chunk_filename = f'files/upload/{filename}/{filename}_{i}'
                 with open(chunk_filename, 'wb') as chunk_file:
                     try:
                         chunk_file.write(chunk_data)
@@ -55,14 +55,15 @@ class Upload_Service():
             return False
         await interaction.edit_original_response(content="Uploading files")
 
-        directory = f'chunks/{filename}'
+        directory = f'files/upload/{filename}'
         files = os.listdir(directory)
         total_files = len(files)
         uploaded_files = 0
 
         for file in files:
             with open(os.path.join(directory, file), 'rb') as f:
-                discord_file = discord.File(f)
+                filename = os.path.basename(file)
+                discord_file = discord.File(f, filename=filename)
                 await text_channel.send(file=discord_file)
             uploaded_files += 1
             await interaction.edit_original_response(content=f"Uploaded {uploaded_files}/{total_files} files")
@@ -72,13 +73,14 @@ class Upload_Service():
 
     async def main(self, interaction, path):
         await interaction.response.send_message("Working on Upload...")
-        os.makedirs('chunks', exist_ok=True)
+        os.makedirs('files/upload', exist_ok=True)
         if os.path.exists(path):
             success = self.split_file(path)
             if success:
                 filename = os.path.basename(path)
                 await self.upload_files(interaction, filename)
-                shutil.rmtree(f"chunks/{filename}")
+                shutil.rmtree(f"files/upload/{filename}")
         else:
             self.logger.error("File %s doesnt exist", path)
             await interaction.edit_original_response(content=f"File {path} doesnt exist")
+            

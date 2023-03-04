@@ -43,5 +43,6 @@ class MCservers(commands.Bot):
 
 if __name__ == "__main__":
     config_json = get_config()
+    os.makedirs('files', exist_ok=True)
     bot = MCservers()
     bot.run(config_json["TOKEN"])

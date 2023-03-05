@@ -5,6 +5,7 @@ from discord.ext import commands
 
 from handlers.upload_file import Upload_Service
 from handlers.download_file import Download_Service
+from handlers.list_files import FileList_Service
 
 
 class Commandhandler(commands.Cog):
@@ -15,22 +16,31 @@ class Commandhandler(commands.Cog):
         self.bot = bot
         self.upload_file = Upload_Service()
         self.download_file = Download_Service()
+        self.list_files = FileList_Service(bot)
 
     @app_commands.command(
         name = "upload-file",
         description = "Uploads a file to discord")
 
     async def upload(self, interaction: discord.Interaction, filepath:str):
-        """command to List specific servers"""
+        """command to upload files"""
         await self.upload_file.main(interaction, filepath)
 
     @app_commands.command(
         name = "download-file",
-        description = "Downloads a file from discord")
+        description = "Downloads a file from discord with the file-id/channel_name/filename")
 
-    async def download (self, interaction: discord.Interaction, filename:str):
-        """command to get servers with players online"""
-        await self.download_file.main(interaction, filename)
+    async def download (self, interaction: discord.Interaction, file_selector: str):
+        """command to download files"""
+        await self.download_file.main(interaction, file_selector)
+
+    @app_commands.command(
+        name = "list-files",
+        description = "List files which are uploaded")
+
+    async def file_list (self, interaction: discord.Interaction):
+        """command to list uploaded files"""
+        await self.list_files.main(interaction)
 
 
 async def setup(bot: commands.Bot) -> None:

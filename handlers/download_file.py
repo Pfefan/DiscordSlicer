@@ -41,9 +41,9 @@ class Download_Service(discord.ui.View):
             )
             return False
 
-
-        self.logger.info("Downloading files...")
-        await interaction.edit_original_response(content="Downloading files...")
+        filename = self.db_manager.find_name_by_channel_id(channel_id)
+        self.logger.info("Downloading %s", filename)
+        await interaction.edit_original_response(content=f"Downloading {filename}")
         async for message in text_channel.history(limit=None):
             if len(message.attachments) > 0:
                 for attachment in message.attachments:
@@ -75,10 +75,44 @@ class Download_Service(discord.ui.View):
 
         self.logger.info("Successfully merged files and saved it in the downloads folder")
         await interaction.edit_original_response(content="Successfully merged files and saved it in the downloads folder")
+        shutil.rmtree(f"files/download/{channel_id}") # remove the downloaded chunk data
+
+    async def get_file_channel_id(self, interaction, file):
+        # Check if file exists in database by ID
+        id_entry = self.db_manager.find_by_id(file)
+        if id_entry is not None:
+            return id_entry
+        
+        # If file not found by ID, try finding it by basename
+        basename = os.path.basename(file)
+        basename = os.path.splitext(basename)[0]
+        name_entry = self.db_manager.find_by_filename(basename)
+        if name_entry is not None:
+            return name_entry
+        
+        # If file not found by basename, try finding the channel by name
+        category_name = "UPLOAD"
+        category = discord.utils.get(interaction.guild.categories, name=category_name)
+        if category is None:
+            category = await interaction.guild.create_category(category_name)
+        channel = discord.utils.get(category.channels, name=file)
+        if channel is not None:
+            channel_entry = self.db_manager.find_by_channel_name(channel.id)
+            if channel_entry is not None:
+                return channel_entry
+        
+        # If file not found by ID, basename, or channel name, return None
+        return None
+
 
     async def main(self, interaction, file:str):
         await interaction.response.send_message("Working on Download...")
         os.makedirs("files/download", exist_ok=True)
-        await self.download_files(interaction, channel_id)
-        await self.merge_files(interaction, channel_id)
-        shutil.rmtree(f"files/download/{channel_id}/")
+        file_id = await self.get_file_channel_id(interaction, file)
+        if file_id != None:
+            self.logger.info("Found file in the channel with the id %s", file_id)
+            await self.download_files(interaction, file_id)
+            await self.merge_files(interaction, file_id)
+        else:
+            self.logger.info("Didnt find any file for the input: %s", file)
+            await interaction.edit_original_response(content=f"Didnt find any file for the input: {file}")

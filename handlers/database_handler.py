@@ -26,3 +26,27 @@ class FileManager:
         session.close()
         self.logger.info("Got file data from database")
         return files
+
+    def find_by_id(self, file_id):
+        session = self.Session()
+        file = session.query(SavedFile).filter_by(id=file_id).first()
+        session.close()
+        return file.channel_id if file else None
+
+    def find_by_filename(self, filename):
+        session = self.Session()
+        file = session.query(SavedFile).filter_by(file_name=filename).first()
+        session.close()
+        return file.channel_id if file else None
+
+    def find_by_channel_name(self, channel_id):
+        session = self.Session()
+        file = session.query(SavedFile).filter_by(channel_id=channel_id).first()
+        session.close()
+        return file.channel_id if file else None
+
+    def find_name_by_channel_id(self, channel_id):
+        session = self.Session()
+        file = session.query(SavedFile).filter_by(channel_id=channel_id).first()
+        session.close()
+        return file.file_name if file else "No file found"

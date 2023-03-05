@@ -14,6 +14,7 @@ class FileList_Service():
         self.page = 1
 
     async def get_embed(self, page, msg_interaction):
+        self.logger.info(f"Getting embed for page %s...", page)
         files = self.db_handler.get_files()
         chunks = [files[i:i+8] for i in range(0, len(files), 8)]
         num_pages = len(chunks)
@@ -36,8 +37,8 @@ class FileList_Service():
         if num_pages > 1:
             embed.set_footer(text=f"Page {page}/{num_pages}")
 
-            previous_btn = Button(label="Previous", style=discord.ButtonStyle.primary, emoji="⬅️", disabled=(page == 1))
-            next_btn = Button(label="Next", style=discord.ButtonStyle.primary, emoji="➡️", disabled=(page == num_pages))
+            previous_btn = Button(label="Previous", style=discord.ButtonStyle.secondary, emoji="⬅️", disabled=(page == 1))
+            next_btn = Button(label="Next", style=discord.ButtonStyle.secondary, emoji="➡️", disabled=(page == num_pages))
 
             async def previous_callback(interaction, page):
                 if page > 1:
@@ -60,8 +61,10 @@ class FileList_Service():
             view.add_item(previous_btn)
             view.add_item(next_btn)
 
+            self.logger.debug("Returning embed and view for page %s", page)
             return embed, view
         else:
+            self.logger.debug(f"Returning embed for page %s", page)
             return embed, None
 
 

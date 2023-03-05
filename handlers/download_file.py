@@ -10,41 +10,21 @@ from pathlib import Path
 import discord
 
 from logging_formatter import ConfigLogger
+from handlers.database_handler import FileManager
 
 
-class Download_Service:
-    """
-    A class used to download and merge files from a Discord text channel.
-
-    Attributes:
-        category_name (str): The name of the category to search for in the server.
-        logger (logging.Logger): The logger object used to log messages.
-
-    Methods:
-        download_files: Downloads all files from a Discord text channel.
-        merge_files: Merges all downloaded files into a single file and saves it to the user's downloads folder.
-        main: Main method used to download and merge files from a Discord text channel.
-    """
-
+class Download_Service(discord.ui.View):
     def __init__(self) -> None:
         """
         Initializes the Download_Service class.
         """
         self.category_name = "UPLOAD"
         self.logger = ConfigLogger().setup()
+        self.db_manager = FileManager()
 
-    async def download_files(self, interaction, text_channel_name):
-        """
-        Downloads all files from a Discord text channel.
 
-        Args:
-            interaction (discord.Interaction): The interaction object for the command.
-            text_channel_name (str): The name of the text channel to download files from.
-
-        Returns:
-            bool: True if files were downloaded successfully, False otherwise.
-        """
-        os.makedirs(f"files/download/{text_channel_name}", exist_ok=True)
+    async def download_files(self, interaction, channel_id):
+        os.makedirs(f"files/download/{channel_id}", exist_ok=True)
         category = discord.utils.get(interaction.guild.categories, name=self.category_name)
         if category is None:
             self.logger.warning("No category found with name %s", self.category_name)
@@ -53,38 +33,29 @@ class Download_Service:
             )
             return False
 
-        text_channel = discord.utils.get(category.channels, name=text_channel_name)
+        text_channel = discord.utils.get(category.channels, id=int(channel_id))
         if text_channel is None:
-            self.logger.info("No text channel found with name %s", text_channel_name)
+            self.logger.info("No text channel found with id %s", channel_id)
             await interaction.edit_original_response(
-                content=f"No text channel found with name {text_channel_name}"
+                content=f"No text channel found with id {channel_id}"
             )
             return False
 
-        self.logger.info("Downloading files...")
-        await interaction.edit_original_response(content="Downloading files...")
+        filename = self.db_manager.find_name_by_channel_id(channel_id)
+        self.logger.info("Downloading %s", filename)
+        await interaction.edit_original_response(content=f"Downloading {filename}")
         async for message in text_channel.history(limit=None):
             if len(message.attachments) > 0:
                 for attachment in message.attachments:
-                    file_path = f"files/download/{text_channel_name}/{attachment.filename}"
+                    file_path = f"files/download/{channel_id}/{attachment.filename}"
                     with open(file_path, "wb") as f:
                         await attachment.save(f)
 
         self.logger.info("All files downloaded successfully")
         await interaction.edit_original_response(content="All files downloaded successfully")
 
-    async def merge_files(self, interaction, text_channel_name):
-        """
-        Merges all downloaded files into a single file and saves it to the user's downloads folder.
-
-        Args:
-            interaction (discord.Interaction): The interaction object for the command.
-            text_channel_name (str): The name of the text channel to download files from.
-
-        Returns:
-            bool: True if files were merged and saved successfully, False otherwise.
-        """
-        input_files = os.listdir(f"files/download/{text_channel_name}")
+    async def merge_files(self, interaction, channel_id):
+        input_files = os.listdir(f"files/download/{channel_id}")
         if not input_files:
             self.logger.info("No input files found")
             await interaction.edit_original_response(content="No input files found")
@@ -98,31 +69,50 @@ class Download_Service:
 
         with open(output_path, "wb") as output_file:
             for input_file in input_files:
-                input_path = f"files/download/{text_channel_name}/{input_file}"
+                input_path = f"files/download/{channel_id}/{input_file}"
                 with open(input_path, "rb") as input_file:
                     shutil.copyfileobj(input_file, output_file)
 
         self.logger.info("Successfully merged files and saved it in the downloads folder")
         await interaction.edit_original_response(content="Successfully merged files and saved it in the downloads folder")
+        shutil.rmtree(f"files/download/{channel_id}") # remove the downloaded chunk data
 
-    async def main(self, interaction, text_channel_name: str):
-        """
-        The main method to download and merge files from a Discord text channel.
+    async def get_file_channel_id(self, interaction, file):
+        # Check if file exists in database by ID
+        id_entry = self.db_manager.find_by_id(file)
+        if id_entry is not None:
+            return id_entry
+        
+        # If file not found by ID, try finding it by basename
+        basename = os.path.basename(file)
+        basename = os.path.splitext(basename)[0]
+        name_entry = self.db_manager.find_by_filename(basename)
+        if name_entry is not None:
+            return name_entry
+        
+        # If file not found by basename, try finding the channel by name
+        category_name = "UPLOAD"
+        category = discord.utils.get(interaction.guild.categories, name=category_name)
+        if category is None:
+            category = await interaction.guild.create_category(category_name)
+        channel = discord.utils.get(category.channels, name=file)
+        if channel is not None:
+            channel_entry = self.db_manager.find_by_channel_name(channel.id)
+            if channel_entry is not None:
+                return channel_entry
+        
+        # If file not found by ID, basename, or channel name, return None
+        return None
 
-        Parameters:
-        -----------
-        interaction: discord.Interaction
-            The Discord interaction object.
-        text_channel_name: str
-            The name of the text channel from which to download and merge files.
 
-        Returns:
-        --------
-        None
-        """
+    async def main(self, interaction, file:str):
         await interaction.response.send_message("Working on Download...")
         os.makedirs("files/download", exist_ok=True)
-        channel_name = text_channel_name.replace(" ", "-")
-        await self.download_files(interaction, channel_name)
-        await self.merge_files(interaction, channel_name)
-        shutil.rmtree(f"files/download/{text_channel_name}/")
+        file_id = await self.get_file_channel_id(interaction, file)
+        if file_id != None:
+            self.logger.info("Found file in the channel with the id %s", file_id)
+            await self.download_files(interaction, file_id)
+            await self.merge_files(interaction, file_id)
+        else:
+            self.logger.info("Didnt find any file for the input: %s", file)
+            await interaction.edit_original_response(content=f"Didnt find any file for the input: {file}")

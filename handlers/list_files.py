@@ -14,7 +14,7 @@ class FileList_Service():
         self.page = 1
 
     async def get_embed(self, page, msg_interaction):
-        self.logger.info(f"Getting embed for page %s...", page)
+        self.logger.info("Getting embed for page %s...", page)
         files = self.db_handler.get_files()
         chunks = [files[i:i+8] for i in range(0, len(files), 8)]
         num_pages = len(chunks)
@@ -61,10 +61,10 @@ class FileList_Service():
             view.add_item(previous_btn)
             view.add_item(next_btn)
 
-            self.logger.debug("Returning embed and view for page %s", page)
+            self.logger.info("Returning embed and view for page %s", page)
             return embed, view
         else:
-            self.logger.debug(f"Returning embed for page %s", page)
+            self.logger.info(f"Returning embed for page %s", page)
             return embed, None
 
 

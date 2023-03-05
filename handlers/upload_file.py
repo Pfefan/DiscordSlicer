@@ -58,14 +58,15 @@ class Upload_Service():
             self.logger.error("File already exists")
             await interaction.edit_original_response(content="File already exists")
             return False
+        
 
         directory = f'files/upload/{filename}'
         files = os.listdir(directory)
         total_files = len(files)
         uploaded_files = 0
         
-        self.logger.info("Uploading files %s", total_files)
-        await interaction.edit_original_response(content=f"Uploading files {total_files}")
+        self.logger.info("Uploading %s files", total_files)
+        await interaction.edit_original_response(content=f"Uploading {total_files} files")
 
         for file in files:
             with open(os.path.join(directory, file), 'rb') as f:

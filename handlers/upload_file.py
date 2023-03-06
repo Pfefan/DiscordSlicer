@@ -2,18 +2,20 @@ import os
 import shutil
 
 import discord
-from handlers.database_handler import FileManager
+from handlers.database_handler import Local_DB_Manager, Cloud_DB_Manager
 
 from logging_formatter import ConfigLogger
 
 
 class Upload_Service():
-    def __init__(self) -> None:
+    def __init__(self, use_cloud_database) -> None:
+        self.logger = ConfigLogger().setup()
+        self.local_db_handler = Local_DB_Manager()
+        self.local_db_handler.configure_database()
+        self.cloud_db_handler = Cloud_DB_Manager()
+        self.use_cloud_database = use_cloud_database
         self.chunk_size = 8388608
         self.category_name = "UPLOAD"
-        self.logger = ConfigLogger().setup()
-        self.db_handler = FileManager()
-        self.db_handler.configure_database()
 
     def split_file(self, path):
         filename = os.path.basename(path)
@@ -83,7 +85,10 @@ class Upload_Service():
         file_name = base_name
         file_size = os.stat(path).st_size
         file_type = extension.replace(".", "")
-        self.db_handler.add_file(user_id, channel_id, file_name, self.convert_size(file_size), file_type)
+        if self.use_cloud_database:
+            self.cloud_db_handler.insert_file(user_id, channel_id, file_name, self.convert_size(file_size), file_type)
+        else:
+            self.local_db_handler.insert_file(user_id, channel_id, file_name, self.convert_size(file_size), file_type)
 
         self.logger.info("All files uploaded successfully")
         await interaction.edit_original_response(content="All files uploaded successfully")

@@ -1,11 +1,13 @@
-"""Main command handler to handel slash commands"""
+"""Main command handler to handle slash commands"""
+import configparser
+
 import discord
 from discord import app_commands
 from discord.ext import commands
 
-from handlers.upload_file import Upload_Service
 from handlers.download_file import Download_Service
 from handlers.list_files import FileList_Service
+from handlers.upload_file import Upload_Service
 
 
 class Commandhandler(commands.Cog):
@@ -14,9 +16,14 @@ class Commandhandler(commands.Cog):
     def __init__(self, bot: commands.Bot):
         """init func"""
         self.bot = bot
-        self.upload_file = Upload_Service()
-        self.download_file = Download_Service()
-        self.list_files = FileList_Service(bot)
+        self.config = configparser.ConfigParser()
+        self.config.read('config.ini')
+        use_cloud_database_str = self.config['DEFAULT'].get('use_cloud_database', 'false')
+        self.use_cloud_database = use_cloud_database_str.lower() == 'true'
+
+        self.upload_file = Upload_Service(self.use_cloud_database)
+        self.download_file = Download_Service(self.use_cloud_database)
+        self.list_files = FileList_Service(bot, self.use_cloud_database)
 
     @app_commands.command(
         name = "upload-file",

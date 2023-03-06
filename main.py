@@ -1,12 +1,13 @@
 """Main class to initialize the programm"""
+import configparser
 import os
 import sys
 
 import discord
 from discord.ext import commands
-import configparser
 
 from logging_formatter import ConfigLogger
+
 logger = ConfigLogger().setup()
 
 def get_config():
@@ -14,22 +15,20 @@ def get_config():
         config = configparser.ConfigParser()
 
         config['DEFAULT'] = {
-            'TOKEN': 'your-discord-bot-token-here',
-            'APPLICATION_ID': 'your-applicationid-here',
-            'USE_CLOUD_DATABASE': 'False',
-            'CONNECTION_STRING': 'your-connection-string-here',
-            'CLUSTER_NAME': 'your-cluster-name-here'
+            'token': 'your-discord-bot-token-here',
+            'application_id': 'your-applicationid-here',
+            'use_cloud_database': 'False',
+            'connection_string': 'your-connection-string-here',
+            'cluster_name': 'your-cluster-name-here'
         }
         with open('config.ini', 'w+', encoding="utf-8") as configfile:
             config.write(configfile)
         logger.warning("No Config file")
         sys.exit(1)
     else:
-        with open("config.txt", "r", encoding="utf8") as conf:
-            content = conf.readlines()
-            content = [line.strip() for line in content]
-            config_dict = dict(line.split("=") for line in content)
-            return config_dict
+        config = configparser.ConfigParser()
+        config.read('config.ini')
+        return config['DEFAULT']
 
 
 class MCservers(commands.Bot):
@@ -37,7 +36,7 @@ class MCservers(commands.Bot):
     def __init__(self) -> None:
         config = get_config()
         super().__init__(command_prefix = "-", intents = discord.Intents.all(),
-                         application_id = config["APPLICATION_ID"])
+                         application_id = config["application_id"])
 
     async def setup_hook(self) -> None:
         await self.load_extension("commandhandler")
@@ -55,4 +54,4 @@ if __name__ == "__main__":
     config_json = get_config()
     os.makedirs('files', exist_ok=True)
     bot = MCservers()
-    bot.run(config_json["TOKEN"])
+    bot.run(config_json["token"])

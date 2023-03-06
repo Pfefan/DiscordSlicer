@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from db.saved_files import Base, SavedFile
+from local_db.saved_files import Base, SavedFile
 
 
 @pytest.fixture

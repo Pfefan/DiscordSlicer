@@ -9,6 +9,7 @@ from logging_formatter import ConfigLogger
 class FileList_Service():
     def __init__(self, bot: commands.Bot) -> None:
         self.db_handler = FileManager()
+        self.db_handler.configure_database()
         self.logger = ConfigLogger().setup()
         self.bot = bot
         self.page = 1

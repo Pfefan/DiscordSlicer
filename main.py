@@ -4,16 +4,26 @@ import sys
 
 import discord
 from discord.ext import commands
+import configparser
 
 from logging_formatter import ConfigLogger
 logger = ConfigLogger().setup()
 
 def get_config():
-    if not os.path.isfile("config.txt"):
-        with open("config.txt", "w+", encoding="utf8") as conf:
-            conf.write("TOKEN=your-discord-bot-token-here\nAPPLICATION_ID=your-applicationid-here")
-            logger.info("Invalid Token")
-            sys.exit(1)
+    if not os.path.isfile("config.ini"):
+        config = configparser.ConfigParser()
+
+        config['DEFAULT'] = {
+            'TOKEN': 'your-discord-bot-token-here',
+            'APPLICATION_ID': 'your-applicationid-here',
+            'USE_CLOUD_DATABASE': 'False',
+            'CONNECTION_STRING': 'your-connection-string-here',
+            'CLUSTER_NAME': 'your-cluster-name-here'
+        }
+        with open('config.ini', 'w+', encoding="utf-8") as configfile:
+            config.write(configfile)
+        logger.warning("No Config file")
+        sys.exit(1)
     else:
         with open("config.txt", "r", encoding="utf8") as conf:
             content = conf.readlines()

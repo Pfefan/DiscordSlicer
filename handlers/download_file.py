@@ -13,7 +13,7 @@ from logging_formatter import ConfigLogger
 from handlers.database_handler import FileManager
 
 
-class Download_Service(discord.ui.View):
+class Download_Service():
     def __init__(self) -> None:
         """
         Initializes the Download_Service class.
@@ -21,6 +21,7 @@ class Download_Service(discord.ui.View):
         self.category_name = "UPLOAD"
         self.logger = ConfigLogger().setup()
         self.db_manager = FileManager()
+        self.db_manager.configure_database()
 
 
     async def download_files(self, interaction, channel_id):

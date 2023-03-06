@@ -13,6 +13,7 @@ class Upload_Service():
         self.category_name = "UPLOAD"
         self.logger = ConfigLogger().setup()
         self.db_handler = FileManager()
+        self.db_handler.configure_database()
 
     def split_file(self, path):
         filename = os.path.basename(path)

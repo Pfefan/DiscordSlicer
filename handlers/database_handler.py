@@ -9,6 +9,67 @@ from sqlalchemy.orm import sessionmaker
 from local_db.saved_files import Base, SavedFile
 from logging_formatter import ConfigLogger
 
+class Hybrid_DB_handler:
+    def __init__(self):
+        # config
+        config = configparser.ConfigParser()
+        config.read('config.ini')
+        use_cloud_database_str = config['DEFAULT'].get('use_cloud_database', 'false')
+        self.use_cloud_database = use_cloud_database_str.lower() == 'true'
+        # database Classes
+        self.local_db = Local_DB_Manager()
+        self.local_db.configure_database()
+        
+        self.cloud_db = Cloud_DB_Manager(config)
+
+    def insert_file(self, userid:int, channel_id:int, file_name:str, file_size:str, file_type:str):
+        if self.use_cloud_database:
+            self.cloud_db.insert_file(userid, channel_id, file_name, file_size, file_type)
+        else:
+            self.local_db.insert_file(userid, channel_id, file_name, file_size, file_type)
+
+    def get_files(self):
+        if self.use_cloud_database:
+            files = self.cloud_db.get_files()
+            files = [FileData(f['_id'], f['user_id'], f['channel_id'], f['file_name'], f['file_size'], f['file_type']) for f in files]
+            return files
+        else:
+            files = self.local_db.get_files()
+            files = [FileData(f.id, f.user_id, f.channel_id, f.file_name, f.file_size, f.file_type) for f in files]
+            return files
+
+    def find_by_id(self, file_id: str):
+        if self.use_cloud_database:
+            return self.cloud_db.find_by_id(file_id)
+        else:
+            return self.local_db.find_by_id(file_id)
+
+    def find_by_filename(self, filename:str):
+        if self.use_cloud_database:
+            return self.cloud_db.find_by_filename(filename)
+        else:
+            return self.local_db.find_by_filename(filename)
+
+    def find_by_channel_id(self, channel_id:int):
+        if self.use_cloud_database:
+            return self.cloud_db.find_by_channel_id(channel_id)
+        else:
+            return self.local_db.find_by_channel_id(channel_id)
+
+    def find_name_by_channel_id(self, channel_id:int):
+        if self.use_cloud_database:
+            return self.cloud_db.find_name_by_channel_id(channel_id)
+        else:
+            return self.local_db.find_name_by_channel_id(channel_id)
+    
+class FileData:
+    def __init__(self, id, user_id, channel_id, file_name, file_size, file_type):
+        self.id = id
+        self.user_id = user_id
+        self.channel_id = channel_id
+        self.file_name = file_name
+        self.file_size = file_size
+        self.file_type = file_type
 
 class Local_DB_Manager:
     def __init__(self):
@@ -61,7 +122,7 @@ class Local_DB_Manager:
     def find_by_filename(self, filename):
         return self.find_by(file_name=filename)
 
-    def find_by_channel_name(self, channel_id):
+    def find_by_channel_id(self, channel_id):
         return self.find_by(channel_id=channel_id)
 
     def find_name_by_channel_id(self, channel_id):
@@ -72,9 +133,8 @@ class Local_DB_Manager:
 
 
 class Cloud_DB_Manager():
-    def __init__(self):
-        config = configparser.ConfigParser()
-        config.read('config.ini')
+    def __init__(self, config):
+        self.config = config
 
         cluster = MongoClient(config['DEFAULT']['connection_string'])
         self.db = cluster[config['DEFAULT']['cluster_name']]
@@ -82,7 +142,6 @@ class Cloud_DB_Manager():
         self.counters = self.db["counters"]
         
         self.logger = ConfigLogger().setup()
-
 
     def insert_file(self, user_id, channel_id, file_name, file_size, file_type):
         """
@@ -120,7 +179,7 @@ class Cloud_DB_Manager():
     def find_by_filename(self, filename):
         return self.find_by(file_name=filename)
 
-    def find_by_channel_name(self, channel_id):
+    def find_by_channel_id(self, channel_id):
         return self.find_by(channel_id=int(channel_id))
 
     def find_name_by_channel_id(self, channel_id):

@@ -45,7 +45,7 @@ def test_find_by_channel_name(session):
     file = [69, 420, "myfile", "16Gb", "exe"]
     session.insert_file(*file)
 
-    assert session.find_by_channel_name(420) == file[1]
+    assert session.find_by_channel_id(420) == file[1]
 
 def test_find_name_by_channel_id(session):
     file = [69, 420, "myfile", "16Gb", "exe"]

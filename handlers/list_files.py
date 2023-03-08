@@ -2,29 +2,20 @@ import discord
 from discord.ext import commands
 from discord.ui import Button, View
 
-from handlers.database_handler import Local_DB_Manager, Cloud_DB_Manager
+from handlers.database_handler import Hybrid_DB_handler
 from logging_formatter import ConfigLogger
 
 
 class FileList_Service():
-    def __init__(self, bot: commands.Bot, use_cloud_database) -> None:
-        self.local_db_handler = Local_DB_Manager()
-        self.local_db_handler.configure_database()
-        self.cloud_db_handler = Cloud_DB_Manager()
+    def __init__(self, bot: commands.Bot) -> None:
+        self.db_handler = Hybrid_DB_handler()
         self.logger = ConfigLogger().setup()
         self.bot = bot
-        self.use_cloud_database = use_cloud_database
         self.page = 1
 
     async def get_embed(self, page, msg_interaction):
         self.logger.info("Getting embed for page %s...", page)
-        files = []
-        if self.use_cloud_database:
-            files = self.cloud_db_handler.get_files()
-            files = [FileData(f['_id'], f['user_id'], f['channel_id'], f['file_name'], f['file_size'], f['file_type']) for f in files]
-        else:
-            files = self.local_db_handler.get_files()
-            files = [FileData(f.id, f.user_id, f.channel_id, f.file_name, f.file_size, f.file_type) for f in files]
+        files = self.db_handler.get_files()
 
         chunks = [files[i:i+8] for i in range(0, len(files), 8)]
         num_pages = len(chunks)

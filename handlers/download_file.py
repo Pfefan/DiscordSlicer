@@ -10,20 +10,17 @@ from pathlib import Path
 import discord
 
 from logging_formatter import ConfigLogger
-from handlers.database_handler import Local_DB_Manager, Cloud_DB_Manager
+from handlers.database_handler import Hybrid_DB_handler
 
 
 class Download_Service():
-    def __init__(self, use_cloud_database) -> None:
+    def __init__(self) -> None:
         """
         Initializes the Download_Service class.
         """
         self.logger = ConfigLogger().setup()
-        self.local_db_manager = Local_DB_Manager()
-        self.local_db_manager.configure_database()
-        self.cloud_db_manager = Cloud_DB_Manager()
+        self.db_handler = Hybrid_DB_handler()
         self.category_name = "UPLOAD"
-        self.use_cloud_database = use_cloud_database
 
 
     async def download_files(self, interaction, channel_id):
@@ -44,10 +41,8 @@ class Download_Service():
                 content=f"No text channel found with id {channel_id}"
             )
             return False
-        if self.use_cloud_database:
-            filename = self.cloud_db_manager.find_name_by_channel_id(channel_id)
-        else:
-            filename = self.local_db_manager.find_name_by_channel_id(channel_id)
+        filename = self.db_handler.find_name_by_channel_id(channel_id)
+
         self.logger.info("Downloading %s", filename)
         await interaction.edit_original_response(content=f"Downloading {filename}")
         async for message in text_channel.history(limit=None):
@@ -84,59 +79,30 @@ class Download_Service():
         shutil.rmtree(f"files/download/{channel_id}") # remove the downloaded chunk data
 
     async def get_file_channel_id(self, interaction, file):
-        if self.use_cloud_database:
-            # Check if file exists in database by ID
-            if file.isdigit():
-                id_entry = self.cloud_db_manager.find_by_id(file)
-                if id_entry is not None:
-                    return id_entry
-            
-            # If file not found by ID, try finding it by basename
-            basename = os.path.basename(file)
-            basename = os.path.splitext(basename)[0]
-            name_entry = self.cloud_db_manager.find_by_filename(basename)
-            if name_entry is not None:
-                return name_entry
-            
-            # If file not found by basename, try finding the channel by name
-            category_name = "UPLOAD"
-            category = discord.utils.get(interaction.guild.categories, name=category_name)
-            if category is None:
-                category = await interaction.guild.create_category(category_name)
-            channel = discord.utils.get(category.channels, name=file)
-            if channel is not None:
-                channel_entry = self.cloud_db_manager.find_by_channel_name(channel.id)
-                if channel_entry is not None:
-                    return channel_entry
-            
-            # If file not found by ID, basename, or channel name, return None
-            return None
-        else:
-            # Check if file exists in database by ID
-            id_entry = self.local_db_manager.find_by_id(file)
+        # Check if file exists in database by ID
+        if file.isdigit():
+            id_entry = self.db_handler.find_by_id(file)
             if id_entry is not None:
                 return id_entry
+        
+        # If file not found by ID, try finding it by basename
+        basename = os.path.basename(file)
+        basename = os.path.splitext(basename)[0]
+        name_entry = self.db_handler.find_by_filename(basename)
+        if name_entry is not None:
+            return name_entry
+        
+        # If file not found by basename, try finding the channel by name
+        category_name = "UPLOAD"
+        category = discord.utils.get(interaction.guild.categories, name=category_name)
+        if category is None:
+            category = await interaction.guild.create_category(category_name)
+        channel = discord.utils.get(category.channels, name=file)
+        if channel is not None:
+            channel_entry = self.db_handler.find_by_channel_id(channel.id)
+            if channel_entry is not None:
+                return channel_entry
             
-            # If file not found by ID, try finding it by basename
-            basename = os.path.basename(file)
-            basename = os.path.splitext(basename)[0]
-            name_entry = self.local_db_manager.find_by_filename(basename)
-            if name_entry is not None:
-                return name_entry
-            
-            # If file not found by basename, try finding the channel by name
-            category_name = "UPLOAD"
-            category = discord.utils.get(interaction.guild.categories, name=category_name)
-            if category is None:
-                category = await interaction.guild.create_category(category_name)
-            channel = discord.utils.get(category.channels, name=file)
-            if channel is not None:
-                channel_entry = self.local_db_manager.find_by_channel_name(channel.id)
-                if channel_entry is not None:
-                    return channel_entry
-            
-            # If file not found by ID, basename, or channel name, return None
-            return None
 
 
     async def main(self, interaction, file:str):

@@ -1,5 +1,4 @@
 """Main command handler to handle slash commands"""
-import configparser
 
 import discord
 from discord import app_commands
@@ -16,22 +15,19 @@ class Commandhandler(commands.Cog):
     def __init__(self, bot: commands.Bot):
         """init func"""
         self.bot = bot
-        self.config = configparser.ConfigParser()
-        self.config.read('config.ini')
-        use_cloud_database_str = self.config['DEFAULT'].get('use_cloud_database', 'false')
-        self.use_cloud_database = use_cloud_database_str.lower() == 'true'
 
-        self.upload_file = Upload_Service(self.use_cloud_database)
-        self.download_file = Download_Service(self.use_cloud_database)
-        self.list_files = FileList_Service(bot, self.use_cloud_database)
+        self.upload_file = Upload_Service()
+        self.download_file = Download_Service()
+        self.list_files = FileList_Service(bot)
 
     @app_commands.command(
         name = "upload-file",
         description = "Uploads a file to discord")
 
-    async def upload(self, interaction: discord.Interaction, filepath:str):
+    async def upload(self, ctx: commands.Context, filepath: str):
         """command to upload files"""
-        await self.upload_file.main(interaction, filepath)
+        await self.upload_file.main(ctx, filepath)
+
 
     @app_commands.command(
         name = "download-file",

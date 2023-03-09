@@ -12,6 +12,8 @@ class FileList_Service():
         self.logger = ConfigLogger().setup()
         self.bot = bot
         self.page = 1
+        self.message = None
+
 
     async def get_embed(self, page, ctx):
         self.logger.info("Getting embed for page %s...", page)
@@ -46,14 +48,14 @@ class FileList_Service():
                     new_page = page - 1
                     embed, view = await self.get_embed(new_page, ctx)
                     await ctx.response.defer()
-                    await message.edit(embed=embed, view=view)
+                    await self.message.edit(embed=embed, view=view)
             
             async def next_callback(ctx, page, num_pages):
                 if page < num_pages:
                     new_page = page + 1
                     embed, view = await self.get_embed(new_page, ctx)
                     await ctx.response.defer()
-                    await message.edit(embed=embed, view=view)
+                    await self.message.edit(embed=embed, view=view)
 
             previous_btn.callback = lambda i: previous_callback(i, page)
             next_btn.callback = lambda i: next_callback(i, page, num_pages)
@@ -71,7 +73,8 @@ class FileList_Service():
 
     async def embed(self, ctx, page=1):
         embed, view = await self.get_embed(page, ctx)
-        message = await ctx.send(embed=embed, view=view)
+        self.message = await ctx.send(embed=embed, view=view)
+
 
     async def main(self, ctx):
         await self.embed(ctx)

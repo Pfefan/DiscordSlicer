@@ -13,7 +13,7 @@ class FileList_Service():
         self.bot = bot
         self.page = 1
 
-    async def get_embed(self, page, msg_interaction):
+    async def get_embed(self, page, ctx):
         self.logger.info("Getting embed for page %s...", page)
         files = self.db_handler.get_files()
 
@@ -41,19 +41,19 @@ class FileList_Service():
             previous_btn = Button(label="Previous", style=discord.ButtonStyle.secondary, emoji="⬅️", disabled=(page == 1))
             next_btn = Button(label="Next", style=discord.ButtonStyle.secondary, emoji="➡️", disabled=(page == num_pages))
 
-            async def previous_callback(interaction, page):
+            async def previous_callback(ctx, page):
                 if page > 1:
                     new_page = page - 1
-                    embed, view = await self.get_embed(new_page, msg_interaction)
-                    await interaction.response.defer()
-                    await msg_interaction.edit_original_response(embed=embed, view=view)
+                    embed, view = await self.get_embed(new_page, ctx)
+                    await ctx.response.defer()
+                    await message.edit(embed=embed, view=view)
             
-            async def next_callback(interaction, page, num_pages):
+            async def next_callback(ctx, page, num_pages):
                 if page < num_pages:
                     new_page = page + 1
-                    embed, view = await self.get_embed(new_page, msg_interaction)
-                    await interaction.response.defer()
-                    await msg_interaction.edit_original_response(embed=embed, view=view)
+                    embed, view = await self.get_embed(new_page, ctx)
+                    await ctx.response.defer()
+                    await message.edit(embed=embed, view=view)
 
             previous_btn.callback = lambda i: previous_callback(i, page)
             next_btn.callback = lambda i: next_callback(i, page, num_pages)
@@ -65,22 +65,13 @@ class FileList_Service():
             self.logger.info("Returning embed and view for page %s", page)
             return embed, view
         else:
-            self.logger.info(f"Returning embed for page %s", page)
+            self.logger.info("Returning embed for page %s", page)
             return embed, None
 
 
-    async def embed(self, interaction, page=1):
-        embed, view = await self.get_embed(page, interaction)
-        await interaction.response.send_message(embed=embed, view=view)
+    async def embed(self, ctx, page=1):
+        embed, view = await self.get_embed(page, ctx)
+        message = await ctx.send(embed=embed, view=view)
 
-    async def main(self, interaction):
-        await self.embed(interaction)
-
-class FileData:
-    def __init__(self, id, user_id, channel_id, file_name, file_size, file_type):
-        self.id = id
-        self.user_id = user_id
-        self.channel_id = channel_id
-        self.file_name = file_name
-        self.file_size = file_size
-        self.file_type = file_type
+    async def main(self, ctx):
+        await self.embed(ctx)

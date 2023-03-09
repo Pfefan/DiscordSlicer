@@ -44,19 +44,19 @@ class Upload_Service():
             self.logger.error("only %s out of %s chunks were saved", chunks_saved, num_chunks)
             return False
 
-    async def upload_files(self, interaction, filename, path):
+    async def upload_files(self, ctx, message, filename, path):
         base_name, extension = os.path.splitext(filename)
         category_name = "UPLOAD"
-        category = discord.utils.get(interaction.guild.categories, name=category_name)
+        category = discord.utils.get(ctx.guild.categories, name=category_name)
         if category is None:
-            category = await interaction.guild.create_category(category_name)
+            category = await ctx.guild.create_category(category_name)
         text_channel = discord.utils.get(category.channels, name=filename)
 
         if text_channel is None:
             text_channel = await category.create_text_channel(base_name)
         else:
             self.logger.error("File already exists")
-            await interaction.edit_original_response(content="File already exists")
+            await message.edit(content="File already exists")
             return False
         
 
@@ -66,7 +66,7 @@ class Upload_Service():
         uploaded_files = 0
         
         self.logger.info("Uploading %s files", total_files)
-        await interaction.edit_original_response(content=f"Uploading {total_files} files")
+        await message.edit(content=f"Uploading {total_files} files")
 
         for file in files:
             with open(os.path.join(directory, file), 'rb') as f:
@@ -74,10 +74,11 @@ class Upload_Service():
                 discord_file = discord.File(f, filename=filename)
                 await text_channel.send(file=discord_file)
             uploaded_files += 1
-            await interaction.edit_original_response(content=f"Uploaded {uploaded_files}/{total_files} files")
+            await message.edit(content=f"Uploaded {uploaded_files}/{total_files} files")
 
         channel_id = text_channel.id
-        user_id = interaction.user.id
+        user_id = ctx.author.id
+
 
         file_name = base_name
         file_size = os.stat(path).st_size
@@ -85,7 +86,7 @@ class Upload_Service():
         self.dbhandler.insert_file(user_id, channel_id, file_name, self.convert_size(file_size), file_type)
 
         self.logger.info("All files uploaded successfully")
-        await interaction.edit_original_response(content="All files uploaded successfully")
+        await message.edit(content="All files uploaded successfully")
 
     def convert_size(self, size_bytes):
         if size_bytes >= 1024*1024*1024:
@@ -97,16 +98,16 @@ class Upload_Service():
         else:
             return f"{size_bytes} bytes"
 
-    async def main(self, interaction, path):
-        await interaction.response.send_message("Working on Upload...")
+    async def main(self, ctx, path):
+        message = await ctx.send("Working on Upload...")
         os.makedirs('files/upload', exist_ok=True)
         if os.path.exists(path):
             success = self.split_file(path)
             if success:
                 filename = os.path.basename(path)
-                await self.upload_files(interaction, filename, path)
+                await self.upload_files(ctx, message, filename, path)
                 shutil.rmtree(f"files/upload/{filename}")
         else:
             self.logger.error("File %s doesnt exist", path)
-            await interaction.edit_original_response(content=f"File {path} doesnt exist")
+            await message.edit(content=f"File {path} doesnt exist")
             

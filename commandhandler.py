@@ -20,30 +20,32 @@ class Commandhandler(commands.Cog):
         self.download_file = Download_Service()
         self.list_files = FileList_Service(bot)
 
-    @app_commands.command(
+    @commands.hybrid_command(
         name = "upload-file",
-        description = "Uploads a file to discord")
+        description = "Uploads a file to discord",
+        with_app_command = True)
 
     async def upload(self, ctx: commands.Context, filepath: str):
         """command to upload files"""
         await self.upload_file.main(ctx, filepath)
 
-
-    @app_commands.command(
+    @commands.hybrid_command(
         name = "download-file",
-        description = "Downloads a file from discord with the file-id/channel_name/filename")
+        description = "Downloads a file from discord with the file-id/channel_name/filename",
+        with_app_command = True)
 
-    async def download (self, interaction: discord.Interaction, file_selector: str):
+    async def download (self, ctx: commands.Context, file_selector: str):
         """command to download files"""
-        await self.download_file.main(interaction, file_selector)
+        await self.download_file.main(ctx, file_selector)
 
-    @app_commands.command(
+    @commands.hybrid_command(
         name = "list-files",
-        description = "List files which are uploaded")
+        description = "List files which are uploaded",
+        with_app_command = True)
 
-    async def file_list (self, interaction: discord.Interaction):
+    async def file_list (self, ctx: commands.Context):
         """command to list uploaded files"""
-        await self.list_files.main(interaction)
+        await self.list_files.main(ctx)
 
 
 async def setup(bot: commands.Bot) -> None:

@@ -23,13 +23,13 @@ class Download_Service():
         self.category_name = "UPLOAD"
 
 
-    async def download_files(self, interaction, channel_id):
+    async def download_files(self, ctx, message, channel_id):
         filename = ""
         os.makedirs(f"files/download/{channel_id}", exist_ok=True)
-        category = discord.utils.get(interaction.guild.categories, name=self.category_name)
+        category = discord.utils.get(ctx.guild.categories, name=self.category_name)
         if category is None:
             self.logger.warning("No category found with name %s", self.category_name)
-            await interaction.edit_original_response(
+            await message.edit(
                 content=f"No category found with name {self.category_name}"
             )
             return False
@@ -37,14 +37,14 @@ class Download_Service():
         text_channel = discord.utils.get(category.channels, id=int(channel_id))
         if text_channel is None:
             self.logger.info("No text channel found with id %s", channel_id)
-            await interaction.edit_original_response(
+            await message.edit(
                 content=f"No text channel found with id {channel_id}"
             )
             return False
         filename = self.db_handler.find_name_by_channel_id(channel_id)
 
         self.logger.info("Downloading %s", filename)
-        await interaction.edit_original_response(content=f"Downloading {filename}")
+        await message.edit(content=f"Downloading {filename}")
         async for message in text_channel.history(limit=None):
             if len(message.attachments) > 0:
                 for attachment in message.attachments:
@@ -53,13 +53,13 @@ class Download_Service():
                         await attachment.save(f)
 
         self.logger.info("All files downloaded successfully")
-        await interaction.edit_original_response(content="All files downloaded successfully")
+        await message.edit(content="All files downloaded successfully")
 
-    async def merge_files(self, interaction, channel_id):
+    async def merge_files(self, ctx, message, channel_id):
         input_files = os.listdir(f"files/download/{channel_id}")
         if not input_files:
             self.logger.info("No input files found")
-            await interaction.edit_original_response(content="No input files found")
+            await message.edit(content="No input files found")
             return False
 
         first_file = input_files[0]
@@ -75,7 +75,7 @@ class Download_Service():
                     shutil.copyfileobj(input_file, output_file)
 
         self.logger.info("Successfully merged files and saved it in the downloads folder")
-        await interaction.edit_original_response(content="Successfully merged files and saved it in the downloads folder")
+        await message.edit(content="Successfully merged files and saved it in the downloads folder")
         shutil.rmtree(f"files/download/{channel_id}") # remove the downloaded chunk data
 
     async def get_file_channel_id(self, interaction, file):
@@ -105,14 +105,14 @@ class Download_Service():
             
 
 
-    async def main(self, interaction, file:str):
-        await interaction.response.send_message("Working on Download...")
+    async def main(self, ctx, file:str):
+        message = await ctx.send("Working on Download...")
         os.makedirs("files/download", exist_ok=True)
-        file_id = await self.get_file_channel_id(interaction, file)
+        file_id = await self.get_file_channel_id(ctx, file)
         if file_id != None:
             self.logger.info("Found file in the channel with the id %s", file_id)
-            await self.download_files(interaction, file_id)
-            await self.merge_files(interaction, file_id)
+            await self.download_files(ctx, message, file_id)
+            await self.merge_files(ctx, message, file_id)
         else:
             self.logger.info("Didnt find any file for the input: %s", file)
-            await interaction.edit_original_response(content=f"Didnt find any file for the input: {file}")
+            await message.edit(content=f"Didnt find any file for the input: {file}")

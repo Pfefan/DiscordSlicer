@@ -36,7 +36,7 @@ class MCservers(commands.Bot):
     def __init__(self) -> None:
         config = get_config()
         super().__init__(command_prefix = "-", intents = discord.Intents.all(),
-                         application_id = config["application_id"])
+                         application_id = config["application_id"], help_command=None)
 
     async def setup_hook(self) -> None:
         await self.load_extension("commandhandler")

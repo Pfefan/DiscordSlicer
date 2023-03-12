@@ -48,6 +48,20 @@ class Commandhandler(commands.Cog):
         """command to list uploaded files"""
         await self.list_files.main(ctx)
 
+    @commands.hybrid_command(
+        name = "help",
+        description = "Displays an embed that shows all possible commands.",
+        with_app_command = True)
+        
+    async def help(self, ctx: commands.Context):
+        """help command"""
+        embed = discord.Embed(title="Available Commands", color=0xff69b4)
+        embed.add_field(name="upload-file", value="Uploads a file to Discord", inline=False)
+        embed.add_field(name="download-file", value="Downloads a file from Discord with the file-id/channel_name/filename", inline=False)
+        embed.add_field(name="list-files", value="Lists files that have been uploaded", inline=False)
+        await ctx.send(embed=embed)
+
+
 
 async def setup(bot: commands.Bot) -> None:
     """Cogs setup func"""

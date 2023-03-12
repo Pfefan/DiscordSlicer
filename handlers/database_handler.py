@@ -31,11 +31,11 @@ class Hybrid_DB_handler:
     def get_files(self):
         if self.use_cloud_database:
             files = self.cloud_db.get_files()
-            files = [FileData(f['_id'], f['user_id'], f['channel_id'], f['file_name'], f['file_size'], f['file_type']) for f in files]
+            files = [FileData(f['_id'], f['user_id'], f['channel_id'], f['file_id'], f['file_name'], f['file_size'], f['file_type']) for f in files]
             return files
         else:
             files = self.local_db.get_files()
-            files = [FileData(f.id, f.user_id, f.channel_id, f.file_name, f.file_size, f.file_type) for f in files]
+            files = [FileData(f.id, f.user_id, f.channel_id, f.file_id, f.file_name, f.file_size, f.file_type) for f in files]
             return files
 
     def find_by_id(self, file_id: str):
@@ -69,10 +69,11 @@ class Hybrid_DB_handler:
             return self.local_db.find_fullname_by_channel_id(channel_id)
     
 class FileData:
-    def __init__(self, id, user_id, channel_id, file_name, file_size, file_type):
+    def __init__(self, id, user_id, channel_id, file_id, file_name, file_size, file_type):
         self.id = id
         self.user_id = user_id
         self.channel_id = channel_id
+        self.file_id = file_id
         self.file_name = file_name
         self.file_size = file_size
         self.file_type = file_type
@@ -123,7 +124,7 @@ class Local_DB_Manager:
         return file.channel_id if file else None
 
     def find_by_id(self, file_id):
-        return self.find_by(id=file_id)
+        return self.find_by(file_id=file_id)
 
     def find_by_filename(self, filename):
         return self.find_by(file_name=filename)
@@ -167,9 +168,9 @@ class Cloud_DB_Manager():
         )
         file_id = sequence_document["sequence_value"]
         self.collection.insert_one({
-            "_id": file_id,
             "user_id": user_id,
             "channel_id": channel_id,
+            "file_id": file_id,
             "file_name": file_name,
             "file_size": file_size,
             "file_type": file_type
@@ -186,7 +187,7 @@ class Cloud_DB_Manager():
         return result["channel_id"] if result else None
 
     def find_by_id(self, file_id):
-        return self.find_by(_id=int(file_id))
+        return self.find_by(file_id=int(file_id))
 
     def find_by_filename(self, filename):
         return self.find_by(file_name=filename)

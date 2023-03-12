@@ -27,6 +27,7 @@ class Commandhandler(commands.Cog):
 
     async def upload(self, ctx: commands.Context, filepath: str):
         """command to upload files"""
+        await ctx.reply("Working on Upload ↓")
         await self.upload_file.main(ctx, filepath)
 
     @commands.hybrid_command(

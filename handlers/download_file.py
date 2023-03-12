@@ -55,7 +55,7 @@ class Download_Service():
         self.logger.info("All files downloaded successfully")
         await message.edit(content="All files downloaded successfully")
 
-    async def merge_files(self, ctx, message, channel_id):
+    async def merge_files(self, message, channel_id):
         input_files = os.listdir(f"files/download/{channel_id}")
         if not input_files:
             self.logger.info("No input files found")
@@ -106,13 +106,15 @@ class Download_Service():
 
 
     async def main(self, ctx, file:str):
-        message = await ctx.send("Working on Download...")
+        first_msg = await ctx.send("Working on Download ↓")
         os.makedirs("files/download", exist_ok=True)
         file_id = await self.get_file_channel_id(ctx, file)
         if file_id != None:
+            text_channel = ctx.channel
+            message = await text_channel.send("Preparing download")
             self.logger.info("Found file in the channel with the id %s", file_id)
             await self.download_files(ctx, message, file_id)
-            await self.merge_files(ctx, message, file_id)
+            await self.merge_files(message, file_id)
         else:
             self.logger.info("Didnt find any file for the input: %s", file)
-            await message.edit(content=f"Didnt find any file for the input: {file}")
+            await first_msg.edit(content=f"Didnt find any file for the input: {file}")

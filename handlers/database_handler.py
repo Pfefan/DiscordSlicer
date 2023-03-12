@@ -61,6 +61,12 @@ class Hybrid_DB_handler:
             return self.cloud_db.find_name_by_channel_id(channel_id)
         else:
             return self.local_db.find_name_by_channel_id(channel_id)
+
+    def find_fullname_by_channel_id(self, channel_id:int):
+        if self.use_cloud_database:
+            return self.cloud_db.find_fullname_by_channel_id(channel_id)
+        else:
+            return self.local_db.find_fullname_by_channel_id(channel_id)
     
 class FileData:
     def __init__(self, id, user_id, channel_id, file_name, file_size, file_type):
@@ -130,6 +136,12 @@ class Local_DB_Manager:
         file = session.query(SavedFile).filter_by(channel_id=channel_id).first()
         session.close()
         return file.file_name if file else "No file found"
+    
+    def find_fullname_by_channel_id(self, channel_id):
+        session = self.session_maker()
+        file = session.query(SavedFile).filter_by(channel_id=channel_id).first()
+        session.close()
+        return f"{file.file_name}.{file.file_type}" if file else "No file found"
 
 
 class Cloud_DB_Manager():
@@ -185,3 +197,10 @@ class Cloud_DB_Manager():
     def find_name_by_channel_id(self, channel_id):
         result = self.collection.find_one({"channel_id": channel_id}, {"file_name": 1})
         return result.get("file_name", "No file found")
+
+    def find_fullname_by_channel_id(self, channel_id):
+        result = self.collection.find_one({"channel_id": channel_id}, {"file_name": 1, "file_type": 1})
+        file_name = result.get("file_name", "")
+        file_type = result.get("file_type", "")
+        full_file_name = file_name + '.' + file_type
+        return full_file_name or "No file found"

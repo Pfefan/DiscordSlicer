@@ -2,6 +2,7 @@ import os
 import shutil
 
 import discord
+from discord.ext import commands
 from handlers.database_handler import Hybrid_DB_handler
 
 from logging_formatter import ConfigLogger
@@ -98,8 +99,9 @@ class Upload_Service():
         else:
             return f"{size_bytes} bytes"
 
-    async def main(self, ctx, path):
-        message = await ctx.send("Working on Upload...")
+    async def main(self, ctx:commands.Context, path):
+        text_channel = ctx.channel
+        message = await text_channel.send("Preparing upload")
         os.makedirs('files/upload', exist_ok=True)
         if os.path.exists(path):
             success = self.split_file(path)

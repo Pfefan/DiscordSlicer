@@ -3,5 +3,9 @@ DiscordSlice is a program that allows you to easily upload large files to Discor
 
 ## Current Issues
 
-- The program crashes when files take longer than 15 minutes to upload or download, as an interaction only lasts for 15 minutes. A possible solution would be to use `ctx` instead of interactions.
 - Media files such as `mp4` or `mp3` get corrupted when uploaded, as they need to be split differently to avoid corruption.
+
+## Todo's
+
+- Add a feature to delete files
+- Doku

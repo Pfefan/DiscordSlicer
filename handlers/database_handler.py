@@ -31,12 +31,18 @@ class Hybrid_DB_handler:
     def get_files(self):
         if self.use_cloud_database:
             files = self.cloud_db.get_files()
-            files = [FileData(f['_id'], f['user_id'], f['channel_id'], f['file_name'], f['file_size'], f['file_type']) for f in files]
+            files = [FileData(f['_id'], f['user_id'], f['channel_id'], f['file_id'], f['file_name'], f['file_size'], f['file_type']) for f in files]
             return files
         else:
             files = self.local_db.get_files()
-            files = [FileData(f.id, f.user_id, f.channel_id, f.file_name, f.file_size, f.file_type) for f in files]
+            files = [FileData(f.id, f.user_id, f.channel_id, f.file_id, f.file_name, f.file_size, f.file_type) for f in files]
             return files
+
+    def delete_by_channel_id(self, channel_id):
+        if self.use_cloud_database:
+            return self.cloud_db.delete_by_channel_id(channel_id)
+        else:
+            return self.local_db.delete_by_channel_id(channel_id)
 
     def find_by_id(self, file_id: str):
         if self.use_cloud_database:
@@ -63,10 +69,11 @@ class Hybrid_DB_handler:
             return self.local_db.find_name_by_channel_id(channel_id)
     
 class FileData:
-    def __init__(self, id, user_id, channel_id, file_name, file_size, file_type):
+    def __init__(self, id, user_id, channel_id, file_id, file_name, file_size, file_type):
         self.id = id
         self.user_id = user_id
         self.channel_id = channel_id
+        self.file_id = file_id
         self.file_name = file_name
         self.file_size = file_size
         self.file_type = file_type
@@ -110,6 +117,20 @@ class Local_DB_Manager:
         self.logger.info("Got file data from local database")
         return files
 
+    def delete_by_channel_id(self, channel_id):
+        session = self.session_maker()
+        file = session.query(SavedFile).filter_by(channel_id=channel_id).first()
+        if file is not None:
+            session.delete(file)
+            self.logger.info("Deleted file with channel_id=%s", channel_id)
+            session.commit()
+            session.close()
+            return True
+        else:
+            self.logger.info("No file with channel_id=%s found", channel_id)
+            session.close()
+            return False
+
     def find_by(self, **kwargs):
         session = self.session_maker()
         file = session.query(SavedFile).filter_by(**kwargs).first()
@@ -117,7 +138,7 @@ class Local_DB_Manager:
         return file.channel_id if file else None
 
     def find_by_id(self, file_id):
-        return self.find_by(id=file_id)
+        return self.find_by(file_id=file_id)
 
     def find_by_filename(self, filename):
         return self.find_by(file_name=filename)
@@ -158,6 +179,7 @@ class Cloud_DB_Manager():
             "_id": file_id,
             "user_id": user_id,
             "channel_id": channel_id,
+            "file_id": file_id,
             "file_name": file_name,
             "file_size": file_size,
             "file_type": file_type
@@ -169,12 +191,21 @@ class Cloud_DB_Manager():
         self.logger.info("Got file data from cloud database")
         return results
 
+    def delete_by_channel_id(self, channel_id):
+        result = self.collection.delete_one({"channel_id": channel_id})
+        if result.deleted_count == 1:
+            self.logger.info("Deleted file with channel_id=%s", channel_id)
+            return True
+        else:
+            self.logger.info("No file with channel_id=%s found", channel_id)
+            return False
+
     def find_by(self, **kwargs):
         result = self.collection.find_one(kwargs)
         return result["channel_id"] if result else None
 
     def find_by_id(self, file_id):
-        return self.find_by(_id=int(file_id))
+        return self.find_by(file_id=int(file_id))
 
     def find_by_filename(self, filename):
         return self.find_by(file_name=filename)

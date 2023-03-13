@@ -1,12 +1,12 @@
 """Main command handler to handle slash commands"""
 
 import discord
-from discord import app_commands
 from discord.ext import commands
 
 from handlers.download_file import Download_Service
 from handlers.list_files import FileList_Service
 from handlers.upload_file import Upload_Service
+from handlers.delete_file import Delete_Service
 
 
 class Commandhandler(commands.Cog):
@@ -18,6 +18,7 @@ class Commandhandler(commands.Cog):
 
         self.upload_file = Upload_Service()
         self.download_file = Download_Service()
+        self.delete_file = Delete_Service()
         self.list_files = FileList_Service(bot)
 
     @commands.hybrid_command(
@@ -40,6 +41,15 @@ class Commandhandler(commands.Cog):
         await self.download_file.main(ctx, file_selector)
 
     @commands.hybrid_command(
+        name = "delete-file",
+        description = "Deletes a selected file from Discord",
+        with_app_command = True)
+
+    async def delete (self, ctx: commands.Context, file_selector: str):
+        """command to list uploaded files"""
+        await self.delete_file.main(ctx, file_selector)
+
+    @commands.hybrid_command(
         name = "list-files",
         description = "List files which are uploaded",
         with_app_command = True)
@@ -47,6 +57,21 @@ class Commandhandler(commands.Cog):
     async def file_list (self, ctx: commands.Context):
         """command to list uploaded files"""
         await self.list_files.main(ctx)
+
+    
+    @commands.hybrid_command(
+        name = "help",
+        description = "Displays an embed that shows all possible commands.",
+        with_app_command = True)
+
+    async def help(self, ctx: commands.Context):
+        """help command"""
+        embed = discord.Embed(title="Available Commands", color=0xff69b4)
+        embed.add_field(name="upload-file", value="Uploads a file to Discord", inline=False)
+        embed.add_field(name="download-file", value="Downloads a file from Discord with the file-id/channel_name/filename", inline=False)
+        embed.add_field(name="delete-file", value="Deletes a selected file from Discord", inline=False)
+        embed.add_field(name="list-files", value="Lists files that have been uploaded", inline=False)
+        await ctx.send(embed=embed)
 
 
 async def setup(bot: commands.Bot) -> None:

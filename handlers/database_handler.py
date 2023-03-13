@@ -3,11 +3,12 @@ import configparser
 import pymongo
 import sqlalchemy
 from pymongo import MongoClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, func
 from sqlalchemy.orm import sessionmaker
 
 from local_db.saved_files import Base, SavedFile
 from logging_formatter import ConfigLogger
+
 
 class Hybrid_DB_handler:
     def __init__(self):
@@ -104,7 +105,16 @@ class Local_DB_Manager:
 
     def insert_file(self, userid, channel_id, file_name, file_size, file_type):
         session = self.session_maker()
-        file = SavedFile(user_id=userid, channel_id=channel_id, file_name=file_name, file_size=file_size, file_type=file_type)
+        max_file_id = session.query(func.max(SavedFile.file_id)).scalar() or 0
+        file_id = max_file_id + 1
+        file = SavedFile(
+            file_id=file_id,
+            user_id=userid,
+            channel_id=channel_id,
+            file_name=file_name,
+            file_size=file_size,
+            file_type=file_type
+        )
         session.add(file)
         session.commit()
         session.close()

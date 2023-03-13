@@ -1,6 +1,6 @@
 import pytest
 from handlers.database_handler import Local_DB_Manager
-from local_db.saved_files import Base, SavedFile
+
 
 @pytest.fixture
 def session():
@@ -11,44 +11,54 @@ def session():
 
 def test_insert_file(session):
     file = [69, 420, "myfile", "16Gb", "exe"]
-    session.insert_file(*file)
 
-    saved_file_query = session.session_maker().query(SavedFile).filter_by(user_id=69).first()
-    assert saved_file_query.user_id == file[0]
-    assert saved_file_query.channel_id == file[1]
-    assert saved_file_query.file_name == file[2]
-    assert saved_file_query.file_size == file[3]
-    assert saved_file_query.file_type == file[4]
+    session.insert_file(*file)
+    files = session.get_files()
+
+    assert len(files) == 1
+    assert files[0].file_id == 1
+    assert files[0].user_id == file[0]
+    assert files[0].channel_id == file[1]
+    assert files[0].file_name == file[2]
+    assert files[0].file_size == file[3]
+    assert files[0].file_type == file[4]
 
 def test_get_files(session):
-    initial_num_files = len(session.get_files())
-    file1 = [1, 1, "file1", "1KB", "txt"]
-    session.insert_file(*file1)
-    file2 = [2, 2, "file2", "2KB", "txt"]
-    session.insert_file(*file2)
-    assert len(session.get_files()) == initial_num_files + 2
+    in_files = [(69, 420, "myfile", "16Gb", "exe"), (34, 187, "file", "10MB", "pdf")]
+
+    for file in in_files:
+        session.insert_file(*file)
+
+    files = session.get_files()
+    assert len(files) == 2
+    assert (files[0].user_id, files[0].channel_id, files[0].file_name, files[0].file_size, files[0].file_type) == in_files[0]
+    assert (files[1].user_id, files[1].channel_id, files[1].file_name, files[1].file_size, files[1].file_type) == in_files[1]
+
 
 def test_find_by_id(session):
-    file = [69, 420, "myfile", "16Gb", "exe"]
-    session.insert_file(*file)
-
-    saved_file_id = session.session_maker().query(SavedFile).filter_by(user_id=69).first().id
-    assert session.find_by_id(saved_file_id) == file[1]
+    session.insert_file(69, 420, "file1", 100, "txt")
+    file_id = session.get_files()[0].id
+    channel_id = session.find_by_id(file_id)
+    assert channel_id == 420
 
 def test_find_by_filename(session):
-    file = [69, 420, "myfile", "16Gb", "exe"]
-    session.insert_file(*file)
+    session.insert_file(69, 420, "file1", 100, "txt")
+    channel_id = session.find_by_filename("file1")
+    assert channel_id == 420
 
-    assert session.find_by_filename("myfile") == file[1]
-
-def test_find_by_channel_name(session):
-    file = [69, 420, "myfile", "16Gb", "exe"]
-    session.insert_file(*file)
-
-    assert session.find_by_channel_id(420) == file[1]
+def test_find_by_channel_id(session):
+    session.insert_file(69, 420, "file1", 100, "txt")
+    file_id = session.get_files()[0].id
+    channel_id = session.find_by_channel_id(420)
+    assert channel_id == 420
 
 def test_find_name_by_channel_id(session):
-    file = [69, 420, "myfile", "16Gb", "exe"]
-    session.insert_file(*file)
+    session.insert_file(69, 420, "file1", 100, "txt")
+    file_name = session.find_name_by_channel_id(420)
+    assert file_name == "file1"
 
-    assert session.find_name_by_channel_id(420) == file[2]
+def test_find_fullname_by_channel_id(session):
+    session.insert_file(69, 420, "file1", 100, "txt")
+    full_name = session.find_fullname_by_channel_id(420)
+    assert full_name == "file1.txt"
+

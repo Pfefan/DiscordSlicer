@@ -19,6 +19,10 @@ class FileList_Service():
         self.logger.info("Getting embed for page %s...", page)
         files = self.db_handler.get_files()
 
+        if not files:
+            await ctx.send("There are no files stored in the database.")
+            return None, None
+
         chunks = [files[i:i+8] for i in range(0, len(files), 8)]
         num_pages = len(chunks)
 
@@ -75,8 +79,8 @@ class FileList_Service():
 
     async def embed(self, ctx, page=1):
         embed, view = await self.get_embed(page, ctx)
-        self.message = await ctx.send(embed=embed, view=view)
-
+        if embed is not None and view is not None:
+            self.message = await ctx.send(embed=embed, view=view)
 
     async def main(self, ctx):
         await self.embed(ctx)

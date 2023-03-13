@@ -90,10 +90,9 @@ class Download_Service():
             return name_entry
         
         # If file not found by basename, try finding the channel by name
-        category_name = "UPLOAD"
-        category = discord.utils.get(interaction.guild.categories, name=category_name)
+        category = discord.utils.get(interaction.guild.categories, name=self.category_name)
         if category is None:
-            category = await interaction.guild.create_category(category_name)
+            category = await interaction.guild.create_category(self.category_name)
         channel = discord.utils.get(category.channels, name=file)
         if channel is not None:
             channel_entry = self.db_handler.find_by_channel_id(channel.id)

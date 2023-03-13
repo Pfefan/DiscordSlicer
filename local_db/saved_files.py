@@ -7,6 +7,7 @@ class SavedFile(Base):
     __tablename__ = "saved_files"
 
     id = Column(Integer, primary_key=True)
+    file_id = Column(Integer, autoincrement=True)
     user_id = Column(Integer, nullable=False)
     channel_id = Column(Integer, nullable=False)
     file_name = Column(String, nullable=False)

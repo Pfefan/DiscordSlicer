@@ -58,7 +58,6 @@ class Commandhandler(commands.Cog):
         """command to list uploaded files"""
         await self.list_files.main(ctx)
 
-    
     @commands.hybrid_command(
         name = "help",
         description = "Displays an embed that shows all possible commands.",

@@ -4,6 +4,7 @@ import shutil
 import discord
 from discord.ext import commands
 from handlers.database_handler import Hybrid_DB_handler
+import re
 
 from logging_formatter import ConfigLogger
 
@@ -15,8 +16,7 @@ class Upload_Service():
         self.chunk_size = 8388608
         self.category_name = "UPLOAD"
 
-    def split_file(self, path):
-        filename = os.path.basename(path)
+    def split_file(self, path, filename):
         file_size = os.stat(path).st_size
 
         os.makedirs(f'files/upload/{filename}')
@@ -45,23 +45,27 @@ class Upload_Service():
             self.logger.error("only %s out of %s chunks were saved", chunks_saved, num_chunks)
             return False
 
-    async def upload_files(self, ctx, message, filename, path):
-        base_name, extension = os.path.splitext(filename)
-        category_name = "UPLOAD"
-        category = discord.utils.get(ctx.guild.categories, name=category_name)
+    async def upload_files(self, ctx, message, path, file_name, extension):
+        category = discord.utils.get(ctx.guild.categories, name=self.category_name)
         if category is None:
-            category = await ctx.guild.create_category(category_name)
-        text_channel = discord.utils.get(category.channels, name=filename)
+            category = await ctx.guild.create_category(self.category_name)
+            
+        # Remove any characters that are not allowed in channel names
+        channel_name = re.sub(r'[^a-zA-Z0-9_-]', '', file_name)
+        # Format the channel name to lowercase
+        channel_name = channel_name.lower()
+
+        text_channel = discord.utils.get(category.channels, name=channel_name)
 
         if text_channel is None:
-            text_channel = await category.create_text_channel(base_name)
+            text_channel = await category.create_text_channel(channel_name)
         else:
             self.logger.error("File already exists")
             await message.edit(content="File already exists")
             return False
         
 
-        directory = f'files/upload/{filename}'
+        directory = f'files/upload/{file_name}'
         files = os.listdir(directory)
         total_files = len(files)
         uploaded_files = 0
@@ -71,8 +75,8 @@ class Upload_Service():
 
         for file in files:
             with open(os.path.join(directory, file), 'rb') as f:
-                filename = os.path.basename(file)
-                discord_file = discord.File(f, filename=filename)
+                chuck_filename = os.path.basename(file)
+                discord_file = discord.File(f, filename=chuck_filename)
                 await text_channel.send(file=discord_file)
             uploaded_files += 1
             await message.edit(content=f"Uploaded {uploaded_files}/{total_files} files")
@@ -80,14 +84,13 @@ class Upload_Service():
         channel_id = text_channel.id
         user_id = ctx.author.id
 
-
-        file_name = base_name
         file_size = os.stat(path).st_size
         file_type = extension.replace(".", "")
         self.dbhandler.insert_file(user_id, channel_id, file_name, self.convert_size(file_size), file_type)
 
         self.logger.info("All files uploaded successfully")
         await message.edit(content="All files uploaded successfully")
+        return True
 
     def convert_size(self, size_bytes):
         if size_bytes >= 1024*1024*1024:
@@ -104,11 +107,11 @@ class Upload_Service():
         message = await text_channel.send("Preparing upload")
         os.makedirs('files/upload', exist_ok=True)
         if os.path.exists(path):
-            success = self.split_file(path)
+            file_name, extension = os.path.splitext(os.path.basename(path))
+            success = self.split_file(path, file_name)
             if success:
-                filename = os.path.basename(path)
-                await self.upload_files(ctx, message, filename, path)
-                shutil.rmtree(f"files/upload/{filename}")
+                await self.upload_files(ctx, message, path, file_name, extension)
+                shutil.rmtree(f"files/upload/{file_name}")
         else:
             self.logger.error("File %s doesnt exist", path)
             await message.edit(content=f"File {path} doesnt exist")

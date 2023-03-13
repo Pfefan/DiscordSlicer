@@ -56,23 +56,20 @@ class Download_Service():
         await message.edit(content="All files downloaded successfully")
 
     async def merge_files(self, message, channel_id):
-        input_files = os.listdir(f"files/download/{channel_id}")
+        input_files = sorted(os.listdir(f"files/download/{channel_id}"), key=lambda x: int(x.split("_")[-1]))
         if not input_files:
             self.logger.info("No input files found")
             await message.edit(content="No input files found")
             return False
 
-        first_file = input_files[0]
-        name, extension = os.path.splitext(first_file)
-        extension = extension.split("_")[0]
-        output_filename = name + extension
+        output_filename = self.db_handler.find_fullname_by_channel_id(channel_id)
         output_path = Path(os.path.expanduser("~/Downloads")) / output_filename
-
-        with open(output_path, "wb") as output_file:
-            for input_file in input_files:
+        
+        with open(output_path, 'wb') as f:
+            for i, input_file in enumerate(input_files):
                 input_path = f"files/download/{channel_id}/{input_file}"
-                with open(input_path, "rb") as input_file:
-                    shutil.copyfileobj(input_file, output_file)
+                with open(input_path, 'rb') as chunk_file:
+                    f.write(chunk_file.read())
 
         self.logger.info("Successfully merged files and saved it in the downloads folder")
         await message.edit(content="Successfully merged files and saved it in the downloads folder")

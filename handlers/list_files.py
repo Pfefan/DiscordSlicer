@@ -28,14 +28,16 @@ class FileList_Service():
         current_chunk = chunks[page-1]
         embed = discord.Embed(title="FILES", description="List of uploaded files", color=discord.Color.blurple())
 
+        counter = 1
         for file in current_chunk:
             user = await self.bot.fetch_user(file.user_id)
             channel = self.bot.get_channel(file.channel_id)
             embed.add_field(
-                name=f"{file.id}). {file.file_name}.{file.file_type}",
-                value=f"Uploader: {user.mention} | Size: {file.file_size} \n Saved in channel: {channel.name}",
+                name=f"{counter}). {file.file_name}.{file.file_type}",
+                value=f"ID: {file.file_id} | Uploader: {user.mention} | Size: {file.file_size} \n saved in channel: {channel.name}",
                 inline=False
             )
+            counter += 1
 
         if num_pages > 1:
             embed.set_footer(text=f"Page {page}/{num_pages}")

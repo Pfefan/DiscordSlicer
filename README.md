@@ -3,5 +3,4 @@ DiscordSlice is a program that allows you to easily upload large files to Discor
 
 ## Todo's
 
-- Add a feature to delete files
 - Doku

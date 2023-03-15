@@ -3,10 +3,10 @@
 import discord
 from discord.ext import commands
 
-from handlers.download_file import Download_Service
-from handlers.list_files import FileList_Service
-from handlers.upload_file import Upload_Service
-from handlers.delete_file import Delete_Service
+from handlers.download_file import DownloadService
+from handlers.list_files import FileListService
+from handlers.upload_file import UploadService
+from handlers.delete_file import DeleteService
 
 
 class Commandhandler(commands.Cog):
@@ -16,10 +16,10 @@ class Commandhandler(commands.Cog):
         """init func"""
         self.bot = bot
 
-        self.upload_file = Upload_Service()
-        self.download_file = Download_Service()
-        self.delete_file = Delete_Service()
-        self.list_files = FileList_Service(bot)
+        self.upload_file = UploadService()
+        self.download_file = DownloadService()
+        self.delete_file = DeleteService()
+        self.list_files = FileListService(bot)
 
     @commands.hybrid_command(
         name = "upload-file",

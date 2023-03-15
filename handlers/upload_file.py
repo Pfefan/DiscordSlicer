@@ -1,25 +1,25 @@
 import os
+import re
 import shutil
 
 import discord
 from discord.ext import commands
-from handlers.database_handler import Hybrid_DB_handler
-import re
 
+from handlers.database_handler import HybridDBhandler
 from logging_formatter import ConfigLogger
 
 
-class Upload_Service():
+class UploadService():
     def __init__(self) -> None:
         self.logger = ConfigLogger().setup()
-        self.dbhandler = Hybrid_DB_handler()
+        self.dbhandler = HybridDBhandler()
         self.chunk_size = 8388608
         self.category_name = "UPLOAD"
 
     def split_file(self, path, filename):
         file_size = os.stat(path).st_size
 
-        os.makedirs(f'files/upload/{filename}')
+        os.makedirs(f"files/upload/{filename}", exist_ok=True)
 
         num_chunks = file_size // self.chunk_size
         if file_size % self.chunk_size != 0:

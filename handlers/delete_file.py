@@ -3,16 +3,16 @@ import os
 import discord
 
 from logging_formatter import ConfigLogger
-from handlers.database_handler import Hybrid_DB_handler
+from handlers.database_handler import HybridDBhandler
 
 
-class Delete_Service():
+class DeleteService():
     def __init__(self) -> None:
         """
         Initializes the Delete_Service class.
         """
         self.logger = ConfigLogger().setup()
-        self.db_handler = Hybrid_DB_handler()
+        self.db_handler = HybridDBhandler()
         self.category_name = "UPLOAD"
 
 
@@ -21,9 +21,9 @@ class Delete_Service():
         await channel.delete()
         result = self.db_handler.delete_by_channel_id(channel_id)
         if result:
-             await message.edit(content=f"Deleted {channel.name} with channel_id={channel_id}")
+            await message.edit(content=f"Deleted {channel.name} with channel_id={channel_id}")
         else:
-             await message.edit(content=f"No file with channel_id={channel_id} found")
+            await message.edit(content=f"No file with channel_id={channel_id} found")
 
     async def get_file_channel_id(self, interaction, file):
         # Check if file exists in database by ID

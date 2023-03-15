@@ -1,10 +1,10 @@
 import pytest
-from handlers.database_handler import Local_DB_Manager
+from handlers.database_handler import LocalDBManager
 
 
 @pytest.fixture
 def session():
-    db_manager = Local_DB_Manager()
+    db_manager = LocalDBManager()
     db_manager.configure_database_test()
     yield db_manager
     db_manager.session_maker().close()

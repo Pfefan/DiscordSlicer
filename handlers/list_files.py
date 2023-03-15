@@ -2,18 +2,15 @@ import discord
 from discord.ext import commands
 from discord.ui import Button, View
 
-from handlers.database_handler import Hybrid_DB_handler
+from handlers.database_handler import HybridDBhandler
 from logging_formatter import ConfigLogger
 
 
-class FileList_Service():
-    def __init__(self, bot: commands.Bot) -> None:
-        self.db_handler = Hybrid_DB_handler()
+class FileListService:
+    def __init__(self, bot: commands.Bot):
+        self.db_handler = HybridDBhandler()
         self.logger = ConfigLogger().setup()
         self.bot = bot
-        self.page = 1
-        self.message = None
-
 
     async def get_embed(self, page, ctx):
         self.logger.info("Getting embed for page %s...", page)
@@ -25,7 +22,6 @@ class FileList_Service():
 
         chunks = [files[i:i+8] for i in range(0, len(files), 8)]
         num_pages = len(chunks)
-        
 
         if page < 1 or page > num_pages:
             page = 1
@@ -50,19 +46,19 @@ class FileList_Service():
             previous_btn = Button(label="Previous", style=discord.ButtonStyle.secondary, emoji="⬅️", disabled=(page == 1))
             next_btn = Button(label="Next", style=discord.ButtonStyle.secondary, emoji="➡️", disabled=(page == num_pages))
 
-            async def previous_callback(ctx, page):
+            async def previous_callback(ctx: commands.Context, page):
                 if page > 1:
                     new_page = page - 1
                     embed, view = await self.get_embed(new_page, ctx)
                     await ctx.response.defer()
-                    await self.message.edit(embed=embed, view=view)
+                    await ctx.message.edit(embed=embed, view=view)
             
-            async def next_callback(ctx, page, num_pages):
+            async def next_callback(ctx: commands.Context, page, num_pages):
                 if page < num_pages:
                     new_page = page + 1
                     embed, view = await self.get_embed(new_page, ctx)
                     await ctx.response.defer()
-                    await self.message.edit(embed=embed, view=view)
+                    await ctx.message.edit(embed=embed, view=view)
 
             previous_btn.callback = lambda i: previous_callback(i, page)
             next_btn.callback = lambda i: next_callback(i, page, num_pages)
@@ -80,10 +76,8 @@ class FileList_Service():
 
     async def embed(self, ctx, page=1):
         embed, view = await self.get_embed(page, ctx)
-        if embed is not None and view is not None:
-            self.message = await ctx.send(embed=embed, view=view)
-        elif embed is not None and view is None:
-            self.message = await ctx.send(embed=embed)
+        if embed is not None:
+            await ctx.send(embed=embed, view=view)
 
     async def main(self, ctx):
         await self.embed(ctx)

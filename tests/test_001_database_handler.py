@@ -33,7 +33,20 @@ def test_get_files(session):
     assert len(files) == 2
     assert (files[0].user_id, files[0].channel_id, files[0].file_name, files[0].file_size, files[0].file_type) == in_files[0]
     assert (files[1].user_id, files[1].channel_id, files[1].file_name, files[1].file_size, files[1].file_type) == in_files[1]
+    assert files[0].file_id == 1
+    assert files[1].file_id == 2
 
+def test_delete_by_channel_id(session):
+    in_files = [(69, 420, "myfile", "16Gb", "exe"), (34, 187, "file", "10MB", "pdf")]
+
+    for file in in_files:
+        session.insert_file(*file)
+
+    session.delete_by_channel_id(420)
+    session.delete_by_channel_id(187)
+
+    files = session.get_files()
+    assert len(files) == 0
 
 def test_find_by_id(session):
     session.insert_file(69, 420, "file1", 100, "txt")

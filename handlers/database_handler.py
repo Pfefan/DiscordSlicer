@@ -111,6 +111,7 @@ class Local_DB_Manager:
 
     def insert_file(self, userid, channel_id, file_name, file_size, file_type):
         session = self.session_maker()
+        # pylint: disable=not-callable
         max_file_id = session.query(func.max(SavedFile.file_id)).scalar() or 0
         file_id = max_file_id + 1
         file = SavedFile(

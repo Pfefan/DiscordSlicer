@@ -25,6 +25,7 @@ class FileList_Service():
 
         chunks = [files[i:i+8] for i in range(0, len(files), 8)]
         num_pages = len(chunks)
+        
 
         if page < 1 or page > num_pages:
             page = 1
@@ -81,6 +82,8 @@ class FileList_Service():
         embed, view = await self.get_embed(page, ctx)
         if embed is not None and view is not None:
             self.message = await ctx.send(embed=embed, view=view)
+        elif embed is not None and view is None:
+            self.message = await ctx.send(embed=embed)
 
     async def main(self, ctx):
         await self.embed(ctx)

@@ -7,7 +7,7 @@ from local_db.saved_files import Base, SavedFile
 
 @pytest.fixture(scope="module")
 def db():
-    engine = create_engine('sqlite:///test.db')
+    engine = create_engine('sqlite:///:memory:')
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
     session = Session()
@@ -58,4 +58,3 @@ def test_delete_saved_file(db):
     db.commit()
 
     assert db.query(SavedFile).filter_by(id=file.id).first() is None
-

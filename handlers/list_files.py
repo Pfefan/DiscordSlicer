@@ -79,9 +79,9 @@ class FileListService:
             embed.set_footer(text=f"Page {page}/{num_pages}")
 
             previous_btn = Button(label="Previous", style=discord.ButtonStyle.secondary,
-                                  emoji="⬅️", disabled=(page == 1))
+                                  emoji="⬅️", disabled=page == 1)
             next_btn = Button(label="Next", style=discord.ButtonStyle.secondary,
-                              emoji="➡️", disabled=(page == num_pages))
+                              emoji="➡️", disabled=page == num_pages)
 
             async def previous_callback(ctx: commands.Context, page):
                 """

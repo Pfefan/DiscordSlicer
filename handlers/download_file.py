@@ -1,3 +1,7 @@
+"""
+This module contains the DownloadService class which is used for downloading
+ and merging files from a Discord channel.
+"""
 import os
 import shutil
 from pathlib import Path
@@ -10,9 +14,30 @@ from handlers.database_handler import HybridDBhandler
 
 
 class DownloadService:
+    """
+    A class used to download and merge files from a Discord channel.
+
+    Methods
+    -------
+    __init__()
+        Initializes the Download_Service class.
+
+    download_files(ctx, message, channel_id)
+        Downloads files from the given channel id and saves them to the local storage.
+
+    merge_files(message, channel_id)
+        Merges the downloaded files into a single file and saves it in the downloads folder.
+
+    get_file_channel_id(ctx, file)
+        Returns the channel ID associated with the given file name or ID.
+
+    main(ctx, file)
+        The main function to be executed when downloading and merging files.
+    """
+
     def __init__(self) -> None:
         """
-        Initializes the Download_Service class.
+        Initializes the Download_Service class by setting up a logger and database handler.
         """
         self.logger = ConfigLogger().setup()
         self.db_handler = HybridDBhandler()
@@ -20,7 +45,28 @@ class DownloadService:
 
         os.makedirs("files/download", exist_ok=True)
 
-    async def download_files(self, ctx: commands.Context, message: discord.Message, channel_id: str) -> bool:
+    async def download_files(
+        self, ctx: commands.Context, message: discord.Message, channel_id: str
+    ) -> bool:
+
+        """
+        Downloads files from the given channel ID and saves them to the local storage.
+
+        Parameters
+        ----------
+        ctx : commands.Context
+            The context in which the message was sent.
+        message : discord.Message
+            The message object that triggered the download.
+        channel_id : str
+            The ID of the channel to download files from.
+
+        Returns
+        -------
+        bool
+            True if the files were downloaded successfully, False otherwise.
+        """
+
         filename = ""
         Path(f"files/download/{channel_id}").mkdir(parents=True, exist_ok=True)
         category = discord.utils.get(ctx.guild.categories, name=self.category_name)
@@ -42,16 +88,34 @@ class DownloadService:
         async for message in text_channel.history(limit=None):
             if len(message.attachments) > 0:
                 for attachment in message.attachments:
-                    file_path = os.path.join("files", "download", str(channel_id), attachment.filename)
-                    with open(file_path, "wb") as f:
-                        await attachment.save(f)
+                    file_path = os.path.join(
+                        "files", "download", str(channel_id), attachment.filename
+                        )
+                    with open(file_path, "wb") as down_file:
+                        await attachment.save(down_file)
 
         self.logger.info("All files downloaded successfully")
         await message.edit(content="All files downloaded successfully")
         return True
 
     async def merge_files(self, message: discord.Message, channel_id: str) -> bool:
-        input_files = sorted(os.listdir(os.path.join("files", "download", str(channel_id))), key=lambda x: int(x.split("_")[-1]))
+        """
+        Merges the downloaded files into a single file and saves it in the downloads folder.
+
+        Parameters
+        ----------
+        message : discord.Message
+            The message object that triggered the merge.
+        channel_id : str
+            The ID of the channel to merge files from.
+
+        Returns
+        -------
+        bool
+            True if the files were merged and saved successfully, False otherwise.
+        """
+        download_dir = os.path.join("files", "download", str(channel_id))
+        input_files = sorted(os.listdir(download_dir), key=lambda x: int(x.split("_")[-1]))
         if not input_files:
             self.logger.info("No input files found")
             await message.edit(content="No input files found")
@@ -60,31 +124,46 @@ class DownloadService:
         output_filename = self.db_handler.find_fullname_by_channel_id(channel_id)
         output_path = Path("~/Downloads").expanduser() / output_filename
 
-        with open(output_path, 'wb') as f:
-            for i, input_file in enumerate(input_files):
+        with open(output_path, 'wb') as chunk_file:
+            for _, input_file in enumerate(input_files):
                 input_path = os.path.join("files", "download", str(channel_id), input_file)
                 with open(input_path, 'rb') as chunk_file:
-                    f.write(chunk_file.read())
+                    chunk_file.write(chunk_file.read())
 
         self.logger.info("Successfully merged files and saved it in the downloads folder")
         await message.edit(content="Successfully merged files and saved it in the downloads folder")
-        shutil.rmtree(os.path.join("files", "download", str(channel_id))) # remove the downloaded chunk data
+        shutil.rmtree(os.path.join("files", "download", str(channel_id)))
         return True
 
     async def get_file_channel_id(self, ctx: commands.Context, file: str) -> str:
+        """
+        Returns the channel ID associated with the given file name or ID.
+
+        Parameters
+        ----------
+        ctx : commands.Context
+            The context in which the message was sent.
+        file : str
+            The name or ID of the file to find the channel ID for.
+
+        Returns
+        -------
+        str or None
+            The channel ID associated with the given file name or ID, or None if not found.
+        """
         # Check if file exists in database by ID
         if file.isdigit():
             id_entry = self.db_handler.find_by_id(file)
             if id_entry is not None:
                 return id_entry
-        
+
         # If file not found by ID, try finding it by basename
         basename = os.path.basename(file)
         basename = os.path.splitext(basename)[0]
         name_entry = self.db_handler.find_by_filename(basename)
         if name_entry is not None:
             return name_entry
-        
+
         # If file not found by basename, try finding the channel by name
         category = discord.utils.get(ctx.guild.categories, name=self.category_name)
         if category is None:
@@ -98,6 +177,16 @@ class DownloadService:
 
 
     async def main(self, ctx: commands.Context, file: str):
+        """
+        The main function to be executed when downloading and merging files.
+
+        Parameters
+        ----------
+        ctx : commands.Context
+            The context in which the message was sent.
+        file : str
+            The name or ID of the file to download and merge.
+        """
         first_msg = await ctx.send("Working on Download ↓")
         os.makedirs("files/download", exist_ok=True)
         file_id = await self.get_file_channel_id(ctx, file)

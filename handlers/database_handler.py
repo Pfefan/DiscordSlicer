@@ -102,11 +102,18 @@ class HybridDBhandler:
         """
         if self.use_cloud_database:
             files = self.cloud_db.get_files()
-            files = [FileData(f['_id'], f['user_id'], f['channel_id'], f['file_id'], f['file_name'], f['file_size'], f['file_type']) for f in files]
+            files = [FileData(
+                f['_id'], f['user_id'], f['channel_id'], f['file_id'],
+                f['file_name'], f['file_size'], f['file_type']
+            ) for f in files]
             return files
         files = self.local_db.get_files()
-        files = [FileData(f.id, f.user_id, f.channel_id, f.file_id, f.file_name, f.file_size, f.file_type) for f in files]
+        files = [FileData(
+            f.id, f.user_id, f.channel_id, f.file_id,
+            f.file_name, f.file_size, f.file_type
+            ) for f in files]
         return files
+
 
     def delete_by_channel_id(self, channel_id):
         """
@@ -216,6 +223,18 @@ class HybridDBhandler:
         return self.local_db.find_fullname_by_channel_id(channel_id)
 
 class FileData:
+    """A class representing file data.
+
+    Attributes:
+        id (str): The file ID.
+        user_id (str): The user ID who uploaded the file.
+        channel_id (int): The channel ID where the file was uploaded.
+        file_id (str): The file ID assigned by the server.
+        file_name (str): The file name.
+        file_size (int): The file size in bytes.
+        file_type (str): The file type, e.g. 'pdf', 'jpg', etc.
+    """
+
     def __init__(self, id, user_id, channel_id, file_id, file_name, file_size, file_type):
         self.id = id
         self.user_id = user_id
@@ -226,37 +245,54 @@ class FileData:
         self.file_type = file_type
 
 class LocalDBManager:
+    """
+    A class for managing the local SQLite database.
+    """
+
     def __init__(self):
         """
         Initialize the database manager.
         """
         self.session_maker = None
-        
         self.logger = ConfigLogger().setup()
-    
+
     def configure_database(self):
-        """configure database for normal programm execution"""
+        """
+        Configures the database for normal program execution.
+        """
         engine = create_engine("sqlite:///local_db/database.db")
         Base.metadata.create_all(engine)
         self.session_maker = sessionmaker(bind=engine)
 
-
     def configure_database_test(self):
-        """configures database for test execution"""
+        """
+        Configures the database for test execution.
+        """
         engine = sqlalchemy.create_engine('sqlite:///:memory:')
-
         Base.metadata.create_all(engine)
         self.session_maker = sqlalchemy.orm.sessionmaker()
         self.session_maker.configure(bind=engine)
 
-    def insert_file(self, userid, channel_id, file_name, file_size, file_type):
+    def insert_file(self, user_id, channel_id, file_name, file_size, file_type):
+        """
+        Inserts a file record into the database.
+
+        Args:
+            user_id (int): The user ID associated with the file.
+            channel_id (int): The channel ID associated with the file.
+            file_name (str): The name of the file.
+            file_size (int): The size of the file in bytes.
+            file_type (str): The file type (e.g., 'pdf', 'docx', 'jpg').
+
+        Returns:
+            None.
+        """
         session = self.session_maker()
-        # pylint: disable=not-callable
         max_file_id = session.query(func.max(SavedFile.file_id)).scalar() or 0
         file_id = max_file_id + 1
         file = SavedFile(
             file_id=file_id,
-            user_id=userid,
+            user_id=user_id,
             channel_id=channel_id,
             file_name=file_name,
             file_size=file_size,
@@ -268,6 +304,12 @@ class LocalDBManager:
         self.logger.info("Saved data to local database")
 
     def get_files(self):
+        """
+        Retrieves all file records from the database.
+
+        Returns:
+            A list of `SavedFile` objects representing the file records.
+        """
         session = self.session_maker()
         files = session.query(SavedFile).all()
         session.close()
@@ -275,6 +317,15 @@ class LocalDBManager:
         return files
 
     def delete_by_channel_id(self, channel_id):
+        """
+        Deletes a file record from the database based on its channel ID.
+
+        Args:
+            channel_id (int): The channel ID associated with the file.
+
+        Returns:
+            True if a file record was deleted, False otherwise.
+        """
         session = self.session_maker()
         file = session.query(SavedFile).filter_by(channel_id=channel_id).first()
         if file is not None:
@@ -289,31 +340,90 @@ class LocalDBManager:
             return False
 
     def find_by(self, **kwargs):
+        """
+        Finds a file record in the database based on the given criteria.
+
+        Args:
+            **kwargs: A dictionary containing the search criteria.
+
+        Returns:
+            The channel ID associated with the file if found, None otherwise.
+        """
         session = self.session_maker()
         file = session.query(SavedFile).filter_by(**kwargs).first()
         session.close()
-        return file.channel_id if file else None
 
-    def find_by_id(self, file_id):
-        return self.find_by(file_id=file_id)
-
-    def find_by_filename(self, filename):
-        return self.find_by(file_name=filename)
-
-    def find_by_channel_id(self, channel_id):
-        return self.find_by(channel_id=channel_id)
-
-    def find_name_by_channel_id(self, channel_id):
-        session = self.session_maker()
-        file = session.query(SavedFile).filter_by(channel_id=channel_id).first()
-        session.close()
-        return file.file_name if file else "No file found"
+def find_by_id(self, file_id):
+    """
+    Find a file by its ID.
     
-    def find_fullname_by_channel_id(self, channel_id):
-        session = self.session_maker()
-        file = session.query(SavedFile).filter_by(channel_id=channel_id).first()
-        session.close()
-        return f"{file.file_name}.{file.file_type}" if file else "No file found"
+    Args:
+        file_id (int): The ID of the file to search for.
+        
+    Returns:
+        The channel ID of the file if it exists, otherwise None.
+    """
+    return self.find_by(file_id=file_id)
+
+
+def find_by_filename(self, filename):
+    """
+    Find a file by its filename.
+    
+    Args:
+        filename (str): The name of the file to search for.
+        
+    Returns:
+        The channel ID of the file if it exists, otherwise None.
+    """
+    return self.find_by(file_name=filename)
+
+
+def find_by_channel_id(self, channel_id):
+    """
+    Find a file by its channel ID.
+    
+    Args:
+        channel_id (int): The channel ID of the file to search for.
+        
+    Returns:
+        The channel ID of the file if it exists, otherwise None.
+    """
+    return self.find_by(channel_id=channel_id)
+
+
+def find_name_by_channel_id(self, channel_id):
+    """
+    Find the name of a file by its channel ID.
+    
+    Args:
+        channel_id (int): The channel ID of the file to search for.
+        
+    Returns:
+        The name of the file if it exists, otherwise "No file found".
+    """
+    session = self.session_maker()
+    file = session.query(SavedFile).filter_by(channel_id=channel_id).first()
+    session.close()
+    return file.file_name if file else "No file found"
+
+
+def find_fullname_by_channel_id(self, channel_id):
+    """
+    Find the full name of a file (including file type) by its channel ID.
+    
+    Args:
+        channel_id (int): The channel ID of the file to search for.
+        
+    Returns:
+        The full name of the file if it exists, otherwise "No file found".
+    """
+    session = self.session_maker()
+    file = session.query(SavedFile).filter_by(channel_id=channel_id).first()
+    session.close()
+    return f"{file.file_name}.{file.file_type}" if file else "No file found"
+
+
 
 
 class CloudDBManager():

@@ -1,4 +1,4 @@
-"""Provides a HybridDBhandler class for handling database data. 
+"""Provides a HybridDBhandler class for handling database data.
 
 This class acts as a switch between a local SQLite database and a remote MongoDB
 Atlas database depending on the value of 'use_cloud_database' in the 'config.ini' file.
@@ -226,23 +226,25 @@ class FileData:
     """A class representing file data.
 
     Attributes:
-        id (str): The file ID.
+        file_id (str): The file ID.
         user_id (str): The user ID who uploaded the file.
         channel_id (int): The channel ID where the file was uploaded.
-        file_id (str): The file ID assigned by the server.
+        server_file_id (str): The file ID assigned by the server.
         file_name (str): The file name.
         file_size (int): The file size in bytes.
         file_type (str): The file type, e.g. 'pdf', 'jpg', etc.
     """
 
-    def __init__(self, id, user_id, channel_id, file_id, file_name, file_size, file_type):
-        self.id = id
+    def __init__(self, file_id, user_id, channel_id, server_file_id, file_name,
+                 file_size, file_type):
+        self.file_id = file_id
         self.user_id = user_id
         self.channel_id = channel_id
-        self.file_id = file_id
+        self.server_file_id = server_file_id
         self.file_name = file_name
         self.file_size = file_size
         self.file_type = file_type
+
 
 class LocalDBManager:
     """
@@ -288,7 +290,7 @@ class LocalDBManager:
             None.
         """
         session = self.session_maker()
-        max_file_id = session.query(func.max(SavedFile.file_id)).scalar() or 0
+        max_file_id = session.query(func.max(SavedFile.file_id)).scalar() or 0  # pylint: disable=not-callable
         file_id = max_file_id + 1
         file = SavedFile(
             file_id=file_id,
@@ -352,94 +354,109 @@ class LocalDBManager:
         session = self.session_maker()
         file = session.query(SavedFile).filter_by(**kwargs).first()
         session.close()
+        return file.channel_id if file else None
 
-def find_by_id(self, file_id):
-    """
-    Find a file by its ID.
-    
-    Args:
-        file_id (int): The ID of the file to search for.
-        
-    Returns:
-        The channel ID of the file if it exists, otherwise None.
-    """
-    return self.find_by(file_id=file_id)
+    def find_by_id(self, file_id):
+        """
+        Find a file by its ID.
 
+        Args:
+            file_id (int): The ID of the file to search for.
 
-def find_by_filename(self, filename):
-    """
-    Find a file by its filename.
-    
-    Args:
-        filename (str): The name of the file to search for.
-        
-    Returns:
-        The channel ID of the file if it exists, otherwise None.
-    """
-    return self.find_by(file_name=filename)
+        Returns:
+            The channel ID of the file if it exists, otherwise None.
+        """
+        return self.find_by(file_id=file_id)
 
 
-def find_by_channel_id(self, channel_id):
-    """
-    Find a file by its channel ID.
-    
-    Args:
-        channel_id (int): The channel ID of the file to search for.
-        
-    Returns:
-        The channel ID of the file if it exists, otherwise None.
-    """
-    return self.find_by(channel_id=channel_id)
+    def find_by_filename(self, filename):
+        """
+        Find a file by its filename.
+
+        Args:
+            filename (str): The name of the file to search for.
+
+        Returns:
+            The channel ID of the file if it exists, otherwise None.
+        """
+        return self.find_by(file_name=filename)
 
 
-def find_name_by_channel_id(self, channel_id):
-    """
-    Find the name of a file by its channel ID.
-    
-    Args:
-        channel_id (int): The channel ID of the file to search for.
-        
-    Returns:
-        The name of the file if it exists, otherwise "No file found".
-    """
-    session = self.session_maker()
-    file = session.query(SavedFile).filter_by(channel_id=channel_id).first()
-    session.close()
-    return file.file_name if file else "No file found"
+    def find_by_channel_id(self, channel_id):
+        """
+        Find a file by its channel ID.
+
+        Args:
+            channel_id (int): The channel ID of the file to search for.
+
+        Returns:
+            The channel ID of the file if it exists, otherwise None.
+        """
+        return self.find_by(channel_id=channel_id)
 
 
-def find_fullname_by_channel_id(self, channel_id):
-    """
-    Find the full name of a file (including file type) by its channel ID.
-    
-    Args:
-        channel_id (int): The channel ID of the file to search for.
-        
-    Returns:
-        The full name of the file if it exists, otherwise "No file found".
-    """
-    session = self.session_maker()
-    file = session.query(SavedFile).filter_by(channel_id=channel_id).first()
-    session.close()
-    return f"{file.file_name}.{file.file_type}" if file else "No file found"
+    def find_name_by_channel_id(self, channel_id):
+        """
+        Find the name of a file by its channel ID.
+
+        Args:
+            channel_id (int): The channel ID of the file to search for.
+
+        Returns:
+            The name of the file if it exists, otherwise "No file found".
+        """
+        session = self.session_maker()
+        file = session.query(SavedFile).filter_by(channel_id=channel_id).first()
+        session.close()
+        return file.file_name if file else "No file found"
 
 
+    def find_fullname_by_channel_id(self, channel_id):
+        """
+        Find the full name of a file (including file type) by its channel ID.
+
+        Args:
+            channel_id (int): The channel ID of the file to search for.
+
+        Returns:
+            The full name of the file if it exists, otherwise "No file found".
+        """
+        session = self.session_maker()
+        file = session.query(SavedFile).filter_by(channel_id=channel_id).first()
+        session.close()
+        return f"{file.file_name}.{file.file_type}" if file else "No file found"
 
 
 class CloudDBManager():
+    """
+    A class that manages the interaction with a cloud database for storing file information.
+    """
     def __init__(self, config):
+        """
+        Initializes the CloudDBManager object with a configuration dictionary.
+        """
         self.config = config
 
         cluster = MongoClient(config['DEFAULT']['connection_string'])
-        self.db = cluster[config['DEFAULT']['cluster_name']]
-        self.collection = self.db["file_list"]
-        self.counters = self.db["counters"]
-        
+        self.database = cluster[config['DEFAULT']['cluster_name']]
+        self.collection = self.database["file_list"]
+        self.counters = self.database["counters"]
+
         self.logger = ConfigLogger().setup()
 
     def insert_file(self, user_id, channel_id, file_name, file_size, file_type):
         """
         Inserts a new file document into the collection with an auto-incrementing file_id.
+
+        Args:
+            user_id (str): The ID of the user who uploaded the file.
+            channel_id (str): The ID of the channel where the file was uploaded.
+            file_name (str): The name of the file.
+            file_size (int): The size of the file in bytes.
+            file_type (str): The type of the file.
+
+        Returns:
+            None
         """
         sequence_document = self.counters.find_one_and_update(
             {"_id": "file_id"},
@@ -459,11 +476,29 @@ class CloudDBManager():
         self.logger.info("Saved data to cloud database")
 
     def get_files(self):
+        """
+        Retrieves all file documents from the collection.
+
+        Parameters:
+        - None.
+
+        Returns:
+        - A cursor object containing all file documents in the collection.
+        """
         results = self.collection.find()
         self.logger.info("Got file data from cloud database")
         return results
 
     def delete_by_channel_id(self, channel_id):
+        """
+        Deletes a file document from the collection by its channel_id.
+
+        Parameters:
+        - channel_id: A string representing the ID of the channel where the file was uploaded.
+
+        Returns:
+        - True if a file document was found and deleted, False otherwise.
+        """
         result = self.collection.delete_one({"channel_id": channel_id})
         if result.deleted_count == 1:
             self.logger.info("Deleted file with channel_id=%s", channel_id)
@@ -473,24 +508,83 @@ class CloudDBManager():
             return False
 
     def find_by(self, **kwargs):
+        """
+        Retrieves a file document from the collection that matches the given query parameters.
+
+        Parameters:
+        - **kwargs: Keyword arguments representing the query parameters to match.
+
+        Returns:
+        - The channel_id of the matching file document if one is found, None otherwise.
+        """
         result = self.collection.find_one(kwargs)
         return result["channel_id"] if result else None
 
     def find_by_id(self, file_id):
+        """
+        Finds a file in the database by its ID.
+
+        Args:
+            file_id (str or int): The ID of the file to find.
+
+        Returns:
+            dict: A dictionary representing the file, or None if the file is not found.
+        """
         return self.find_by(file_id=int(file_id))
 
     def find_by_filename(self, filename):
+        """
+        Finds a file in the database by its filename.
+
+        Args:
+            filename (str): The name of the file to find.
+
+        Returns:
+            dict: A dictionary representing the file, or None if the file is not found.
+        """
         return self.find_by(file_name=filename)
 
     def find_by_channel_id(self, channel_id):
+        """
+        Finds all files associated with a given channel ID.
+
+        Args:
+            channel_id (str or int): The ID of the channel to find files for.
+
+        Returns:
+            list of dicts: A list of dictionaries representing the files associated with the
+              given channel ID.
+        """
         return self.find_by(channel_id=int(channel_id))
 
     def find_name_by_channel_id(self, channel_id):
+        """
+        Finds the name of a file associated with a given channel ID.
+
+        Args:
+            channel_id (str or int): The ID of the channel to find the file name for.
+
+        Returns:
+            str: The name of the file associated with the given channel ID
+            , or "No file found" if no file is found.
+        """
         result = self.collection.find_one({"channel_id": channel_id}, {"file_name": 1})
         return result.get("file_name", "No file found")
 
     def find_fullname_by_channel_id(self, channel_id):
-        result = self.collection.find_one({"channel_id": channel_id}, {"file_name": 1, "file_type": 1})
+        """
+        Finds the full name of a file associated with a given channel ID.
+
+        Args:
+            channel_id (str or int): The ID of the channel to find the full file name for.
+
+        Returns:
+            str: The full name of the file associated with the given channel ID
+            , or "No file found" if no file is found.
+        """
+        result = self.collection.find_one(
+            {"channel_id": channel_id}, {"file_name": 1, "file_type": 1}
+            )
         file_name = result.get("file_name", "")
         file_type = result.get("file_type", "")
         full_file_name = file_name + '.' + file_type

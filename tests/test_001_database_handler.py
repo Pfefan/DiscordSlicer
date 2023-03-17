@@ -1,3 +1,4 @@
+# pylint: disable=redefined-outer-name
 import pytest
 from handlers.database_handler import LocalDBManager
 

@@ -74,13 +74,12 @@ class FileListService:
                         + f"\nsaved in channel: {channel.name}"),
                     inline=False
                 )
-            else:
-                embed.add_field(
-                    name=f"{counter}). {file.file_name}.{file.file_type}",
-                    value=(f"ID: {file.file_id} | Uploader: {user.mention} | Size: {file.file_size}"
-                        + "\nChannel name not found. It may have been deleted."),
-                    inline=False
-                )
+            embed.add_field(
+                name=f"{counter}). {file.file_name}.{file.file_type}",
+                value=(f"ID: {file.file_id} | Uploader: {user.mention} | Size: {file.file_size}"
+                    + "\nChannel name not found. It may have been deleted."),
+                inline=False
+            )
 
             counter += 1
 
@@ -130,9 +129,8 @@ class FileListService:
 
             self.logger.info("Returning embed and view for page %s", page)
             return embed, view
-        else:
-            self.logger.info("Returning embed for page %s", page)
-            return embed, None
+        self.logger.info("Returning embed for page %s", page)
+        return embed, None
 
 
     async def embed(self, ctx, page=1):

@@ -92,9 +92,8 @@ class UploadService():
         if chunks_saved == num_chunks:
             self.logger.info("All chunks saved successfully")
             return True
-        else:
-            self.logger.error("only %s out of %s chunks were saved", chunks_saved, num_chunks)
-            return False
+        self.logger.error("only %s out of %s chunks were saved", chunks_saved, num_chunks)
+        return False
 
     async def upload_files(self, ctx, message, path, file_name, extension):
         """
@@ -170,12 +169,14 @@ class UploadService():
         """
         if size_bytes >= 1024*1024*1024:
             size_gb = size_bytes / (1024*1024*1024)
-            return f"{size_gb:.2f} GB"
+            size = f"{size_gb:.2f} GB"
         elif size_bytes >= 1024*1024:
             size_mb = size_bytes / (1024*1024)
-            return f"{size_mb:.2f} MB"
+            size = f"{size_mb:.2f} MB"
         else:
-            return f"{size_bytes} bytes"
+            size = f"{size_bytes} bytes"
+
+        return size
 
     async def main(self, ctx:commands.Context, path):
         """

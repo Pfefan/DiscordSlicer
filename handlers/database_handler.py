@@ -336,10 +336,9 @@ class LocalDBManager:
             session.commit()
             session.close()
             return True
-        else:
-            self.logger.info("No file with channel_id=%s found", channel_id)
-            session.close()
-            return False
+        self.logger.info("No file with channel_id=%s found", channel_id)
+        session.close()
+        return False
 
     def find_by(self, **kwargs):
         """
@@ -503,9 +502,8 @@ class CloudDBManager():
         if result.deleted_count == 1:
             self.logger.info("Deleted file with channel_id=%s", channel_id)
             return True
-        else:
-            self.logger.info("No file with channel_id=%s found", channel_id)
-            return False
+        self.logger.info("No file with channel_id=%s found", channel_id)
+        return False
 
     def find_by(self, **kwargs):
         """

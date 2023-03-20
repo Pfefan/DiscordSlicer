@@ -67,12 +67,21 @@ class FileListService:
         for file in current_chunk:
             user = await self.bot.fetch_user(file.user_id)
             channel = self.bot.get_channel(file.channel_id)
-            embed.add_field(
-                name=f"{counter}). {file.file_name}.{file.file_type}",
-                value=f"ID: {file.file_id} | Uploader: {user.mention} | Size: {file.file_size} \n" +
-                f"saved in channel: {channel.name}",
-                inline=False
-            )
+            if channel:
+                embed.add_field(
+                    name=f"{counter}). {file.file_name}.{file.file_type}",
+                    value=(f"ID: {file.file_id} | Uploader: {user.mention} | Size: {file.file_size}"
+                        + f"\nsaved in channel: {channel.name}"),
+                    inline=False
+                )
+            else:
+                embed.add_field(
+                    name=f"{counter}). {file.file_name}.{file.file_type}",
+                    value=(f"ID: {file.file_id} | Uploader: {user.mention} | Size: {file.file_size}"
+                        + "\nChannel name not found. It may have been deleted."),
+                    inline=False
+                )
+
             counter += 1
 
         if num_pages > 1:

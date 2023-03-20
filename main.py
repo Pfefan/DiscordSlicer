@@ -23,7 +23,7 @@ def get_config():
         dict: The configuration values as a dictionary.
 
     Raises:
-        SystemExit: If the `config.ini` file is not found and a default configuration 
+        SystemExit: If the `config.ini` file is not found and a default configuration
         cannot be created.
     """
     if not os.path.isfile("config.ini"):

@@ -109,7 +109,7 @@ class Commandhandler(commands.Cog):
         """A Discord slash command that displays an embed of all possible commands.
 
         Args:
-        - ctx (commands.Context): A context object that represents the invocation 
+        - ctx (commands.Context): A context object that represents the invocation
         context of the command.
         """
         embed = discord.Embed(title="Available Commands", color=0xff69b4)

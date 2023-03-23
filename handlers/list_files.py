@@ -145,7 +145,7 @@ class FileListService:
         message = await ctx.send(content="Getting data..")
         embed, view = await self.get_embed(page, ctx)
         if embed is not None:
-            await message.edit(embed=embed, view=view)
+            await message.edit(content="", embed=embed, view=view)
 
     async def main(self, ctx):
         """

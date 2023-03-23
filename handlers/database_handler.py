@@ -1,3 +1,5 @@
+# pylint: disable=too-few-public-methods
+# pylint: disable=too-many-arguments
 """Provides a HybridDBhandler class for handling database data.
 
 This class acts as a switch between a local SQLite database and a remote MongoDB
@@ -235,9 +237,9 @@ class FileData:
         file_type (str): The file type, e.g. 'pdf', 'jpg', etc.
     """
 
-    def __init__(self, pk, user_id, channel_id, file_id, file_name,
+    def __init__(self, file_pk, user_id, channel_id, file_id, file_name,
                  file_size, file_type):
-        self.pk_file = pk
+        self.pk_file = file_pk
         self.user_id = user_id
         self.channel_id = channel_id
         self.file_id = file_id

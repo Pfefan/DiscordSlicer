@@ -6,7 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
-class SavedFile(Base):
+class SavedFile(Base): # pylint: disable=too-few-public-methods
     """Saved Files table"""
     __tablename__ = "saved_files"
 

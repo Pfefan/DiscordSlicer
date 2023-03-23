@@ -1,3 +1,4 @@
+# pylint: disable=too-many-locals
 """
 This module provides functionality to split a large file into smaller chunks
 and upload them to Discord.
@@ -95,7 +96,7 @@ class UploadService():
         self.logger.error("only %s out of %s chunks were saved", chunks_saved, num_chunks)
         return False
 
-    async def upload_files(self, ctx, message, path, file_name, extension):
+    async def upload_files(self, ctx, message, path, file_name, extension): # pylint: disable=too-many-arguments
         """
         Uploads the files to Discord.
 

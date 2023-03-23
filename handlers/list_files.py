@@ -1,3 +1,4 @@
+# pylint: disable=too-many-locals
 """
 This module contains the `FileListService` class that provides functionality for retrieving
  a list of uploaded files.

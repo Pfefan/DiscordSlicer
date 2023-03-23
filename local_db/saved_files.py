@@ -1,9 +1,13 @@
+"""
+Model structure declaration for local DB
+"""
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
-class SavedFile(Base):
+class SavedFile(Base): # pylint: disable=too-few-public-methods
+    """Saved Files table"""
     __tablename__ = "saved_files"
 
     id = Column(Integer, primary_key=True)

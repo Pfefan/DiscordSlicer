@@ -8,7 +8,7 @@ import logging
 import coloredlogs
 
 
-class ConfigLogger():
+class ConfigLogger: # pylint: disable=too-few-public-methods
     """
     This class is used to configure the logger for an application.
     It creates a logger object and sets it up with the coloredlogs library.

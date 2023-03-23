@@ -1,4 +1,4 @@
-"""Main class to initialize the programm"""
+"""Main class to initialize the program."""
 import configparser
 import os
 import sys
@@ -11,6 +11,21 @@ from logging_formatter import ConfigLogger
 logger = ConfigLogger().setup()
 
 def get_config():
+    """Return the configuration file as a dictionary or exit the program if the file is not found.
+
+    If the `config.ini` file is not found, a default configuration will be created
+    and saved to the file.
+    Otherwise, the file will be read and the contents will be returned as a dictionary.
+    The dictionary will contain the configuration values from the `DEFAULT` section
+    of the config file.
+
+    Returns:
+        dict: The configuration values as a dictionary.
+
+    Raises:
+        SystemExit: If the `config.ini` file is not found and a default configuration
+        cannot be created.
+    """
     if not os.path.isfile("config.ini"):
         config = configparser.ConfigParser()
 
@@ -32,19 +47,35 @@ def get_config():
 
 
 class MCservers(commands.Bot):
-    """Bot setup function"""
+    """
+    Bot setup function.
+
+    Attributes:
+        None.
+    """
     def __init__(self) -> None:
         config = get_config()
         super().__init__(command_prefix = "-", intents = discord.Intents.all(),
                          application_id = config["application_id"], help_command=None)
 
     async def setup_hook(self) -> None:
+        """Loads the commandhandler extension and syncs the slash commands tree
+        with Discord's API."""
         await self.load_extension("commandhandler")
         await bot.tree.sync()
 
     async def on_ready(self):
-        """called when the bot has connected to discord
-        sets user activity and prints bot user name"""
+        """
+        Called when the bot has connected to Discord.
+
+        Sets the user activity and prints the bot's user name.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
         logger.info('Logged in as: %s Ready!', self.user)
         await self.change_presence(activity=discord.Activity(type=discord.ActivityType.listening,
                                                             name="-help"),

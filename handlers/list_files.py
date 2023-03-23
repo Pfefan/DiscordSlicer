@@ -63,25 +63,24 @@ class FileListService:
         embed = discord.Embed(title="FILES", description="List of uploaded files",
                               color=discord.Color.blurple())
 
-        counter = 1
         for file in current_chunk:
             user = await self.bot.fetch_user(file.user_id)
             channel = self.bot.get_channel(file.channel_id)
             if channel:
                 embed.add_field(
-                    name=f"{counter}). {file.file_name}.{file.file_type}",
+                    name=f"▪ {file.file_name}.{file.file_type}",
                     value=(f"ID: {file.file_id} | Uploader: {user.mention} | Size: {file.file_size}"
                         + f"\nsaved in channel: {channel.name}"),
                     inline=False
                 )
-            embed.add_field(
-                name=f"{counter}). {file.file_name}.{file.file_type}",
-                value=(f"ID: {file.file_id} | Uploader: {user.mention} | Size: {file.file_size}"
-                    + "\nChannel name not found. It may have been deleted."),
-                inline=False
-            )
+            else:
+                embed.add_field(
+                    name=f"▪ {file.file_name}.{file.file_type}",
+                    value=(f"ID: {file.file_id} | Uploader: {user.mention} | Size: {file.file_size}"
+                        + "\nChannel name not found. It may have been deleted."),
+                    inline=False
+                )
 
-            counter += 1
 
         if num_pages > 1:
             embed.set_footer(text=f"Page {page}/{num_pages}")

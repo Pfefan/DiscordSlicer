@@ -235,12 +235,12 @@ class FileData:
         file_type (str): The file type, e.g. 'pdf', 'jpg', etc.
     """
 
-    def __init__(self, file_id, user_id, channel_id, server_file_id, file_name,
+    def __init__(self, pk, user_id, channel_id, file_id, file_name,
                  file_size, file_type):
-        self.file_id = file_id
+        self.pk_file = pk
         self.user_id = user_id
         self.channel_id = channel_id
-        self.server_file_id = server_file_id
+        self.file_id = file_id
         self.file_name = file_name
         self.file_size = file_size
         self.file_type = file_type

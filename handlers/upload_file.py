@@ -16,10 +16,10 @@ Splits a file into smaller chunks.
 - async upload_files(ctx:commands.Context, message:discord.Message, path:str, file_name:str
 , extension:str) -> bool:
     Uploads the files to Discord.
-    
+
 - convert_size(size_bytes:int) -> str:
     Convert a size in bytes to a human-readable string.
-    
+
 - async main(ctx:commands.Context, path:str):
     Perform the main operation of the upload service.
 """

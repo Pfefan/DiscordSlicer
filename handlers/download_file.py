@@ -9,8 +9,9 @@ from pathlib import Path
 import discord
 from discord.ext import commands
 
-from logging_formatter import ConfigLogger
 from handlers.database_handler import HybridDBhandler
+from handlers.search_file import SearchService
+from logging_formatter import ConfigLogger
 
 
 class DownloadService:
@@ -40,6 +41,7 @@ class DownloadService:
         Initializes the Download_Service class by setting up a logger and database handler.
         """
         self.logger = ConfigLogger().setup()
+        self.search_serv = SearchService()
         self.db_handler = HybridDBhandler()
         self.category_name = "UPLOAD"
 
@@ -124,57 +126,16 @@ class DownloadService:
         output_filename = self.db_handler.find_fullname_by_channel_id(channel_id)
         output_path = Path("~/Downloads").expanduser() / output_filename
 
-        with open(output_path, 'wb') as chunk_file:
+        with open(output_path, 'wb') as chunk_files:
             for _, input_file in enumerate(input_files):
                 input_path = os.path.join("files", "download", str(channel_id), input_file)
-                with open(input_path, 'rb') as chunk_file:
-                    chunk_file.write(chunk_file.read())
+                with open(input_path, 'rb') as file:
+                    chunk_files.write(file.read())
 
         self.logger.info("Successfully merged files and saved it in the downloads folder")
         await message.edit(content="Successfully merged files and saved it in the downloads folder")
         shutil.rmtree(os.path.join("files", "download", str(channel_id)))
         return True
-
-    async def get_file_channel_id(self, ctx: commands.Context, file: str) -> str:
-        """
-        Returns the channel ID associated with the given file name or ID.
-
-        Parameters
-        ----------
-        ctx : commands.Context
-            The context in which the message was sent.
-        file : str
-            The name or ID of the file to find the channel ID for.
-
-        Returns
-        -------
-        str or None
-            The channel ID associated with the given file name or ID, or None if not found.
-        """
-        # Check if file exists in database by ID
-        if file.isdigit():
-            id_entry = self.db_handler.find_by_id(file)
-            if id_entry is not None:
-                return id_entry
-
-        # If file not found by ID, try finding it by basename
-        basename = os.path.basename(file)
-        basename = os.path.splitext(basename)[0]
-        name_entry = self.db_handler.find_by_filename(basename)
-        if name_entry is not None:
-            return name_entry
-
-        # If file not found by basename, try finding the channel by name
-        category = discord.utils.get(ctx.guild.categories, name=self.category_name)
-        if category is None:
-            category = await ctx.guild.create_category(self.category_name)
-        channel = discord.utils.get(category.channels, name=file)
-        if channel is not None:
-            channel_entry = self.db_handler.find_by_channel_id(channel.id)
-            if channel_entry is not None:
-                return channel_entry
-        return None
-
 
     async def main(self, ctx: commands.Context, file: str):
         """
@@ -189,7 +150,8 @@ class DownloadService:
         """
         first_msg = await ctx.send("Working on Download ↓")
         os.makedirs("files/download", exist_ok=True)
-        file_id = await self.get_file_channel_id(ctx, file)
+        file_id = await self.search_serv.main(ctx, file, self.category_name)
+        print(file_id)
         if file_id:
             text_channel = ctx.channel
             message = await text_channel.send("Preparing download")

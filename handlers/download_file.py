@@ -71,6 +71,7 @@ class DownloadService:
 
         filename = ""
         edit_message:discord.Message = None
+
         Path(f"files/download/{channel_id}").mkdir(parents=True, exist_ok=True)
         category = discord.utils.get(ctx.guild.categories, name=self.category_name)
         if category is None:

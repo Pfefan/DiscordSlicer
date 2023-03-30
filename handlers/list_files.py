@@ -147,6 +147,7 @@ class FileListService:
         if embed is not None:
             await message.edit(content="", embed=embed, view=view)
 
+
     async def main(self, ctx):
         """
         Retrieves an embed with a list of uploaded files and sends the embed as a message.

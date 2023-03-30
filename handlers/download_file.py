@@ -70,22 +70,24 @@ class DownloadService:
         """
 
         filename = ""
+        edit_message:discord.Message = None
+
         Path(f"files/download/{channel_id}").mkdir(parents=True, exist_ok=True)
         category = discord.utils.get(ctx.guild.categories, name=self.category_name)
         if category is None:
             self.logger.warning("No category found with name %s", self.category_name)
-            await message.edit(content=f"No category found with name {self.category_name}")
+            edit_message = await message.edit(content=f"No category found with name {self.category_name}")
             return False
 
         text_channel = discord.utils.get(category.channels, id=int(channel_id))
         if text_channel is None:
             self.logger.info("No text channel found with id %s", channel_id)
-            await message.edit(content=f"No text channel found with id {channel_id}")
+            edit_message = await message.edit(content=f"No text channel found with id {channel_id}")
             return False
 
         filename = self.db_handler.find_name_by_channel_id(channel_id)
         self.logger.info("Downloading %s", filename)
-        await message.edit(content=f"Downloading {filename}")
+        edit_message = await message.edit(content=f"Downloading {filename}")
 
         async for message in text_channel.history(limit=None):
             if len(message.attachments) > 0:
@@ -97,7 +99,7 @@ class DownloadService:
                         await attachment.save(down_file)
 
         self.logger.info("All files downloaded successfully")
-        await message.edit(content="All files downloaded successfully")
+        await edit_message.edit(content="All files downloaded successfully")
         return True
 
     async def merge_files(self, message: discord.Message, channel_id: str) -> bool:
@@ -151,7 +153,6 @@ class DownloadService:
         first_msg = await ctx.send("Working on Download ↓")
         os.makedirs("files/download", exist_ok=True)
         file_id = await self.search_serv.main(ctx, file, self.category_name)
-        print(file_id)
         if file_id:
             text_channel = ctx.channel
             message = await text_channel.send("Preparing download")

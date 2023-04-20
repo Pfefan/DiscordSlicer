@@ -54,7 +54,8 @@ class UploadService():
         """
         self.logger = ConfigLogger().setup()
         self.dbhandler = HybridDBhandler()
-        self.chunk_size = 8388608
+        self.chunk_size = 26214400
+        self.file_size = 0
         self.category_name = "UPLOAD"
 
     def split_file(self, path, filename):
@@ -69,6 +70,7 @@ class UploadService():
             bool: True if all the chunks were saved successfully, False otherwise.
         """
         file_size = os.stat(path).st_size
+        self.file_size = file_size
 
         os.makedirs(f"files/upload/{filename}", exist_ok=True)
 
@@ -131,18 +133,25 @@ class UploadService():
         directory = f'files/upload/{file_name}'
         files = os.listdir(directory)
         total_files = len(files)
-        uploaded_files = 0
+        upload_size = 0
+        upload_counter = 0
 
         self.logger.info("Uploading %s files", total_files)
         await message.edit(content=f"Uploading {total_files} files")
 
         for file in files:
             with open(os.path.join(directory, file), 'rb') as upload_file:
-                chuck_filename = os.path.basename(file)
-                discord_file = discord.File(upload_file, filename=chuck_filename)
+                chunck_filename = os.path.basename(file)
+                discord_file = discord.File(upload_file, filename=chunck_filename)
+                upload_size += int(os.stat(upload_file.name).st_size)
                 await text_channel.send(file=discord_file)
-            uploaded_files += 1
-            await message.edit(content=f"Uploaded {uploaded_files}/{total_files} files")
+
+            upload_counter += 1
+
+            await message.edit(content=f"Uploading {upload_counter}/{len(files)} files "
+                                        f"{self.convert_size(upload_size)}/"
+                                        f"{self.convert_size(self.file_size)}")
+
 
         channel_id = text_channel.id
         user_id = ctx.author.id

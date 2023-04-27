@@ -96,6 +96,7 @@ class HybridDBhandler:
         """
         if self.use_cloud_database:
             self.cloud_db.insert_file(userid, channel_id, file_name, file_size, file_type)
+            return
         self.local_db.insert_file(userid, channel_id, file_name, file_size, file_type)
 
     def get_files(self):

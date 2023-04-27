@@ -71,6 +71,7 @@ class DownloadService:
 
         filename = ""
         edit_message:discord.Message = None
+        file_count = 0
 
         Path(f"files/download/{channel_id}").mkdir(parents=True, exist_ok=True)
         category = discord.utils.get(ctx.guild.categories, name=self.category_name)
@@ -88,6 +89,8 @@ class DownloadService:
         filename = self.db_handler.find_name_by_channel_id(channel_id)
         self.logger.info("Downloading %s", filename)
         edit_message = await message.edit(content=f"Downloading {filename}")
+        total_files = self.db_handler.get_numfiles(channel_id)
+        print(total_files)
 
         async for message in text_channel.history(limit=None):
             if len(message.attachments) > 0:
@@ -97,6 +100,8 @@ class DownloadService:
                         )
                     with open(file_path, "wb") as down_file:
                         await attachment.save(down_file)
+                    file_count += 1
+                    await edit_message.edit(content=f"Downloading {file_count}/{total_files}")
 
         self.logger.info("All files downloaded successfully")
         await edit_message.edit(content="All files downloaded successfully")

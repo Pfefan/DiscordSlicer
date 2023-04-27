@@ -77,7 +77,7 @@ class HybridDBhandler:
 
         self.cloud_db = CloudDBManager(config)
 
-    def insert_file(self, userid:int, channel_id:int, file_name:str, file_size:str, file_type:str):
+    def insert_file(self, userid:int, channel_id:int, file_name:str, file_size:str, file_type:str, num_files:str):
         """
         Inserts a file into the database.
 
@@ -93,11 +93,13 @@ class HybridDBhandler:
             The size of the file.
         file_type : str
             The type of the file.
+        num_files : str
+            The amount of chunk files stored
         """
         if self.use_cloud_database:
-            self.cloud_db.insert_file(userid, channel_id, file_name, file_size, file_type)
+            self.cloud_db.insert_file(userid, channel_id, file_name, file_size, file_type, num_files)
             return
-        self.local_db.insert_file(userid, channel_id, file_name, file_size, file_type)
+        self.local_db.insert_file(userid, channel_id, file_name, file_size, file_type, num_files)
 
     def get_files(self):
         """
@@ -117,6 +119,22 @@ class HybridDBhandler:
             ) for f in files]
         return files
 
+    def get_numfiles(self, channel_id):
+        """
+        Gets the numfiles value from the database
+
+        Parameters:
+        ----------
+        channel_id : str
+            the channel_id for which the numfiles value will be searched for
+
+        Returns:
+        -------
+        channel_id (int)
+        """
+        if self.use_cloud_database:
+            return self.cloud_db.get_numfiles(channel_id)
+        return self.local_db.get_numfiles(channel_id)
 
     def delete_by_channel_id(self, channel_id):
         """
@@ -278,7 +296,7 @@ class LocalDBManager:
         self.session_maker = sqlalchemy.orm.sessionmaker()
         self.session_maker.configure(bind=engine)
 
-    def insert_file(self, user_id, channel_id, file_name, file_size, file_type):
+    def insert_file(self, user_id, channel_id, file_name, file_size, file_type, num_files):
         """
         Inserts a file record into the database.
 
@@ -288,6 +306,7 @@ class LocalDBManager:
             file_name (str): The name of the file.
             file_size (int): The size of the file in bytes.
             file_type (str): The file type (e.g., 'pdf', 'docx', 'jpg').
+            num_files (int): amount of files uploaded to discord.
 
         Returns:
             None.
@@ -301,7 +320,8 @@ class LocalDBManager:
             channel_id=channel_id,
             file_name=file_name,
             file_size=file_size,
-            file_type=file_type
+            file_type=file_type,
+            num_files=num_files
         )
         session.add(file)
         session.commit()
@@ -320,6 +340,14 @@ class LocalDBManager:
         session.close()
         self.logger.info("Got file data from local database")
         return files
+
+    def get_numfiles(self, channel_id):
+        session = self.session_maker()
+        file = session.query(SavedFile).filter_by(channel_id=channel_id).first()
+        if file is not None:
+            return file.num_files
+        else:
+            return None
 
     def delete_by_channel_id(self, channel_id):
         """
@@ -446,7 +474,7 @@ class CloudDBManager():
 
         self.logger = ConfigLogger().setup()
 
-    def insert_file(self, user_id, channel_id, file_name, file_size, file_type):
+    def insert_file(self, user_id, channel_id, file_name, file_size, file_type, num_files):
         """
         Inserts a new file document into the collection with an auto-incrementing file_id.
 
@@ -456,6 +484,7 @@ class CloudDBManager():
             file_name (str): The name of the file.
             file_size (int): The size of the file in bytes.
             file_type (str): The type of the file.
+            num_files (int): The amount of chunk files stored
 
         Returns:
             None
@@ -473,7 +502,8 @@ class CloudDBManager():
             "file_id": file_id,
             "file_name": file_name,
             "file_size": file_size,
-            "file_type": file_type
+            "file_type": file_type,
+            "num_files": num_files
         })
         self.logger.info("Saved data to cloud database")
 
@@ -490,6 +520,23 @@ class CloudDBManager():
         results = self.collection.find()
         self.logger.info("Got file data from cloud database")
         return results
+
+    def get_numfiles(self, channel_id):
+        """
+        Gets the num files value from database entry
+
+        Parameters:
+        - channel_id: A string representing the ID of the channel where the file was uploaded.
+
+        Returns:
+        - The value of num_files if a document with the given channel_id was found, None otherwise.
+        """
+        result = self.collection.find_one({"channel_id": channel_id})
+        if result:
+            self.logger.info("Found file with channel_id=%s", channel_id)
+            return result.get("num_files")
+        self.logger.info("No file with channel_id=%s found", channel_id)
+        return None
 
     def delete_by_channel_id(self, channel_id):
         """

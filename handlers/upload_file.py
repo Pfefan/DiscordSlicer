@@ -69,7 +69,7 @@ class UploadService():
             filename (str): The name of the file.
 
         Returns:
-            bool: True if all the chunks were saved successfully, False otherwise.
+            bool: if everything worked sucessfully True else False
         """
         file_size = os.stat(path).st_size
         self.file_size = file_size
@@ -179,7 +179,7 @@ class UploadService():
         file_size = os.stat(path).st_size
         file_type = extension.replace(".", "")
         self.dbhandler.insert_file(
-            user_id, channel_id, file_name, self.convert_size(file_size), file_type
+            user_id, channel_id, file_name, self.convert_size(file_size), file_type, total_files
             )
         elapsed_time = time.time() - starttime
         self.logger.info("All files uploaded successfully in %s", elapsed_time)

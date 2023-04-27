@@ -1,6 +1,6 @@
 # pylint: disable=too-many-locals
 """
-This module provides functionality to split a large file into smaller chunks
+This module provides functionality to split a large file into smaller chuncks
 and upload them to Discord.
 
 Attributes:
@@ -27,6 +27,8 @@ Splits a file into smaller chunks.
 import os
 import re
 import shutil
+import time
+import datetime
 
 import discord
 from discord.ext import commands
@@ -116,9 +118,7 @@ class UploadService():
         if category is None:
             category = await ctx.guild.create_category(self.category_name)
 
-        # Remove any characters that are not allowed in channel names
         channel_name = re.sub(r'[^a-zA-Z0-9_-]', '', file_name)
-        # Format the channel name to lowercase
         channel_name = channel_name.lower()
 
         text_channel = discord.utils.get(category.channels, name=channel_name)
@@ -135,22 +135,42 @@ class UploadService():
         total_files = len(files)
         upload_size = 0
         upload_counter = 0
+        starttime = time.time()
 
         self.logger.info("Uploading %s files", total_files)
         await message.edit(content=f"Uploading {total_files} files")
 
         for file in files:
             with open(os.path.join(directory, file), 'rb') as upload_file:
+                chunck_starttime = time.time()
                 chunck_filename = os.path.basename(file)
                 discord_file = discord.File(upload_file, filename=chunck_filename)
-                upload_size += int(os.stat(upload_file.name).st_size)
+                file_size = int(os.stat(upload_file.name).st_size)
+                upload_size += file_size
                 await text_channel.send(file=discord_file)
 
-            upload_counter += 1
+                elapsed_time = time.time() - chunck_starttime
+                upload_speed = file_size / elapsed_time
 
-            await message.edit(content=f"Uploading {upload_counter}/{len(files)} files "
-                                        f"{self.convert_size(upload_size)}/"
-                                        f"{self.convert_size(self.file_size)}")
+                remaining_size = self.file_size - upload_size
+                remaining_time = remaining_size / upload_speed
+
+                remaining_time = datetime.timedelta(seconds=remaining_time)
+                time_format = "{d} days, {h} hours, {m} minutes, {s} seconds"
+
+                formatted_time = time_format.format(
+                    d=remaining_time.days,
+                    h=remaining_time.seconds // 3600,
+                    m=(remaining_time.seconds // 60) % 60,
+                    s=remaining_time.seconds % 60
+                )
+
+                upload_counter += 1
+
+                await message.edit(content=f"📤 Uploading {upload_counter}/{len(files)} files\n"
+                                           f"💾 {self.convert_size(upload_size)}/{self.convert_size(self.file_size)}\n"
+                                           f"⏳ ETA: {formatted_time}\n"
+                                           f"🚀 {self.convert_size(upload_speed)}/s")
 
 
         channel_id = text_channel.id
@@ -161,9 +181,9 @@ class UploadService():
         self.dbhandler.insert_file(
             user_id, channel_id, file_name, self.convert_size(file_size), file_type
             )
-
-        self.logger.info("All files uploaded successfully")
-        await message.edit(content="All files uploaded successfully")
+        elapsed_time = time.time() - starttime
+        self.logger.info("All files uploaded successfully in %s", elapsed_time)
+        await message.edit(content=f"All files uploaded successfully in {elapsed_time}")
         return True
 
     def convert_size(self, size_bytes):

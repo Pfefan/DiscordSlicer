@@ -17,3 +17,4 @@ class SavedFile(Base): # pylint: disable=too-few-public-methods
     file_name = Column(String, nullable=False)
     file_size = Column(String, nullable=False)
     file_type = Column(String, nullable=False)
+    num_files = Column(Integer, nullable=False)

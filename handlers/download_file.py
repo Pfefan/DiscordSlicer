@@ -5,6 +5,8 @@ This module contains the DownloadService class which is used for downloading
 import os
 import shutil
 from pathlib import Path
+import time
+import datetime
 
 import discord
 from discord.ext import commands
@@ -44,6 +46,7 @@ class DownloadService:
         self.search_serv = SearchService()
         self.db_handler = HybridDBhandler()
         self.category_name = "UPLOAD"
+        self.elapsed_time = 0
 
         os.makedirs("files/download", exist_ok=True)
 
@@ -71,6 +74,11 @@ class DownloadService:
 
         filename = ""
         edit_message:discord.Message = None
+        file_count = 0
+        download_size = 0
+        remaining_time = 0
+        download_speed = 0
+        chunk_size = 0
 
         Path(f"files/download/{channel_id}").mkdir(parents=True, exist_ok=True)
         category = discord.utils.get(ctx.guild.categories, name=self.category_name)
@@ -87,19 +95,49 @@ class DownloadService:
 
         filename = self.db_handler.find_name_by_channel_id(channel_id)
         self.logger.info("Downloading %s", filename)
-        edit_message = await message.edit(content=f"Downloading {filename}")
 
+        edit_message = await message.edit(content=f"Downloading {filename}")
+        total_files = self.db_handler.get_numfiles(channel_id)
+        filesize = self.db_handler.get_filesize(channel_id)
+        bytefilesize = self.convert_to_bytes(filesize)
+
+
+        starttime = time.time()
         async for message in text_channel.history(limit=None):
             if len(message.attachments) > 0:
                 for attachment in message.attachments:
+                    await edit_message.edit(content=f"📥 Downloading {file_count}/{total_files}\n"
+                                                    f"💾 {self.convert_size(download_size)}/{filesize}\n"
+                                                    f"⏳ ETA: {remaining_time}\n"
+                                                    f"🚀 {self.convert_size(download_speed)}/s")
+                    chunck_starttime = time.time()
                     file_path = os.path.join(
                         "files", "download", str(channel_id), attachment.filename
                         )
                     with open(file_path, "wb") as down_file:
                         await attachment.save(down_file)
+                        chunk_size = os.path.getsize(file_path)
+                    file_count += 1
+                    download_size += chunk_size
 
-        self.logger.info("All files downloaded successfully")
-        await edit_message.edit(content="All files downloaded successfully")
+                    elapsed_time = time.time() - chunck_starttime
+                    download_speed = chunk_size / elapsed_time
+
+                    remaining_size = bytefilesize - download_size
+                    remaining_time = remaining_size / download_speed
+
+
+                    remaining_time = datetime.timedelta(seconds=remaining_time)
+
+                    if remaining_time.seconds > 0:
+                        remaining_time = self.convert_time(remaining_time)
+                    else:
+                        remaining_time = "0 seconds"
+
+        elapsed_time = datetime.timedelta(seconds=(time.time() - starttime))
+        elapsed_time = self.convert_time(elapsed_time)
+        self.elapsed_time = elapsed_time
+        self.logger.info("All files downloaded successfully in %s", elapsed_time)
         return True
 
     async def merge_files(self, message: discord.Message, channel_id: str) -> bool:
@@ -134,10 +172,70 @@ class DownloadService:
                 with open(input_path, 'rb') as file:
                     chunk_files.write(file.read())
 
-        self.logger.info("Successfully merged files and saved it in the downloads folder")
-        await message.edit(content="Successfully merged files and saved it in the downloads folder")
+        self.logger.info("Finished Downloading and merged files into your download folder in %s", self.elapsed_time)
+        await message.edit(content=f"Finished Downloading and merged files into your download folder in {self.elapsed_time}")
         shutil.rmtree(os.path.join("files", "download", str(channel_id)))
         return True
+    
+    def convert_size(self, size_bytes):
+        """
+        Convert a size in bytes to a human-readable string.
+
+        Args:
+            size_bytes (int): The size in bytes to convert.
+
+        Returns:
+            str: A human-readable string representation of the size.
+
+        """
+        if size_bytes >= 1024*1024*1024:
+            size_gb = size_bytes / (1024*1024*1024)
+            size = f"{size_gb:.2f} GB"
+        elif size_bytes >= 1024*1024:
+            size_mb = size_bytes / (1024*1024)
+            size = f"{size_mb:.2f} MB"
+        else:
+            size = f"{size_bytes} bytes"
+
+        return size
+
+    def convert_to_bytes(self, size_str):
+        """
+        Converts a size string in GB or MB into bytes.
+        
+        Args:
+            size_str (str): The size string to convert. The format should be a number followed by 'GB', 'MB', or nothing for bytes.
+        
+        Returns:
+            int: The size in bytes.
+        """
+        if size_str.endswith("GB"):
+            size = float(size_str[:-2]) * 1024 ** 3
+        elif size_str.endswith("MB"):
+            size = float(size_str[:-2]) * 1024 ** 2
+        else:
+            size = float(size_str)
+        return int(size)
+
+    def convert_time(self, timeval:float):
+        """converts a parsed timedelta into a better readable format
+        
+        Args:
+            timeval(float): the value to convert
+        
+        Returns:
+            str: formated value
+        """
+        time_format = "{d} days, {h} hours, {m} minutes, {s} seconds"
+
+        formatted_time = time_format.format(
+            d=timeval.days,
+            h=timeval.seconds // 3600,
+            m=(timeval.seconds // 60) % 60,
+            s=timeval.seconds % 60
+        )
+
+        return formatted_time
 
     async def main(self, ctx: commands.Context, file: str):
         """

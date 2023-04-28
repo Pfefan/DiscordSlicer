@@ -26,7 +26,7 @@ def test_insert_file(session):
     Args:
         session (LocalDBManager): The LocalDBManager instance configured for testing.
     """
-    file = [69, 420, "myfile", "16Gb", "exe"]
+    file = [69, 420, "myfile", "16Gb", "exe", 6]
 
     session.insert_file(*file)
     files = session.get_files()
@@ -38,6 +38,7 @@ def test_insert_file(session):
     assert files[0].file_name == file[2]
     assert files[0].file_size == file[3]
     assert files[0].file_type == file[4]
+    assert files[0].num_files == file[5]
 
 def test_get_files(session):
     """
@@ -46,7 +47,7 @@ def test_get_files(session):
     Args:
         session (LocalDBManager): The LocalDBManager instance configured for testing.
     """
-    in_files = [(69, 420, "myfile", "16Gb", "exe"), (34, 187, "file", "10MB", "pdf")]
+    in_files = [(69, 420, "myfile", "16Gb", "exe", 10), (34, 187, "file", "10MB", "pdf", 1)]
 
     for file in in_files:
         session.insert_file(*file)
@@ -54,11 +55,34 @@ def test_get_files(session):
     files = session.get_files()
     assert len(files) == 2
     assert (files[0].user_id, files[0].channel_id, files[0].file_name, files[0].file_size,
-            files[0].file_type) == in_files[0]
+            files[0].file_type, files[0].num_files) == in_files[0]
     assert (files[1].user_id, files[1].channel_id, files[1].file_name, files[1].file_size,
-            files[1].file_type) == in_files[1]
+            files[1].file_type, files[1].num_files) == in_files[1]
     assert files[0].file_id == 1
     assert files[1].file_id == 2
+
+def test_get_numfiles(session):
+    """
+    Tests that the `get_numfiles` method returns the num_files associated with a given channel ID.
+
+    Args:
+        session (LocalDBManager): The LocalDBManager instance configured for testing.
+    """
+
+    session.insert_file(69, 420, "file1", "100 GB", "txt", 12)
+    num_files = session.get_numfiles(420)
+    assert num_files == 12
+
+def test_get_filesize(session):
+    """
+    Tests that the `get_filesize` method returns the filesize associated with a given channel ID.
+
+    Args:
+        session (LocalDBManager): The LocalDBManager instance configured for testing.
+    """
+    session.insert_file(69, 420, "file1", "100 GB", "txt", 12)
+    filesize = session.get_filesize(420)
+    assert filesize == "100 GB"
 
 def test_delete_by_channel_id(session):
     """
@@ -67,7 +91,7 @@ def test_delete_by_channel_id(session):
     Args:
         session (LocalDBManager): The LocalDBManager instance configured for testing.
     """
-    in_files = [(69, 420, "myfile", "16Gb", "exe"), (34, 187, "file", "10MB", "pdf")]
+    in_files = [(69, 420, "myfile", "16Gb", "exe", 10), (34, 187, "file", "10MB", "pdf", 1)]
 
     for file in in_files:
         session.insert_file(*file)
@@ -92,7 +116,7 @@ def test_find_by_id(session):
         None
 
     """
-    session.insert_file(69, 420, "file1", 100, "txt")
+    session.insert_file(69, 420, "file1", 100, "txt", 12)
     file_id = session.get_files()[0].id
     channel_id = session.find_by_id(file_id)
     assert channel_id == 420
@@ -111,7 +135,7 @@ def test_find_by_filename(session):
         None
 
     """
-    session.insert_file(69, 420, "file1", 100, "txt")
+    session.insert_file(69, 420, "file1", 100, "txt", 69)
     channel_id = session.find_by_filename("file1")
     assert channel_id == 420
 
@@ -129,7 +153,7 @@ def test_find_by_channel_id(session):
         None
 
     """
-    session.insert_file(69, 420, "file1", 100, "txt")
+    session.insert_file(69, 420, "file1", 100, "txt", 420)
     file_id = session.get_files()[0].channel_id
     channel_id = session.find_by_channel_id(file_id)
     assert channel_id == 420
@@ -148,7 +172,7 @@ def test_find_name_by_channel_id(session):
         None
 
     """
-    session.insert_file(69, 420, "file1", 100, "txt")
+    session.insert_file(69, 420, "file1", 100, "txt", 22)
     file_name = session.find_name_by_channel_id(420)
     assert file_name == "file1"
 
@@ -166,6 +190,6 @@ def test_find_fullname_by_channel_id(session):
         None
 
     """
-    session.insert_file(69, 420, "file1", 100, "txt")
+    session.insert_file(69, 420, "file1", 100, "txt", 12)
     full_name = session.find_fullname_by_channel_id(420)
     assert full_name == "file1.txt"

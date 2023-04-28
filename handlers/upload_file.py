@@ -135,6 +135,8 @@ class UploadService():
         total_files = len(files)
         upload_size = 0
         upload_counter = 0
+        remaining_time = 0
+        upload_speed = 0
         starttime = time.time()
 
         self.logger.info("Uploading %s files", total_files)
@@ -142,6 +144,10 @@ class UploadService():
 
         for file in files:
             with open(os.path.join(directory, file), 'rb') as upload_file:
+                await message.edit(content=f"📤 Uploading {upload_counter}/{len(files)} files\n"
+                            f"💾 {self.convert_size(upload_size)}/{self.convert_size(self.file_size)}\n"
+                            f"⏳ ETA: {remaining_time}\n"
+                            f"🚀 {self.convert_size(upload_speed)}/s")
                 chunck_starttime = time.time()
                 chunck_filename = os.path.basename(file)
                 discord_file = discord.File(upload_file, filename=chunck_filename)
@@ -156,21 +162,9 @@ class UploadService():
                 remaining_time = remaining_size / upload_speed
 
                 remaining_time = datetime.timedelta(seconds=remaining_time)
-                time_format = "{d} days, {h} hours, {m} minutes, {s} seconds"
-
-                formatted_time = time_format.format(
-                    d=remaining_time.days,
-                    h=remaining_time.seconds // 3600,
-                    m=(remaining_time.seconds // 60) % 60,
-                    s=remaining_time.seconds % 60
-                )
+                remaining_time = self.convert_time(remaining_time)
 
                 upload_counter += 1
-
-                await message.edit(content=f"📤 Uploading {upload_counter}/{len(files)} files\n"
-                                           f"💾 {self.convert_size(upload_size)}/{self.convert_size(self.file_size)}\n"
-                                           f"⏳ ETA: {formatted_time}\n"
-                                           f"🚀 {self.convert_size(upload_speed)}/s")
 
 
         channel_id = text_channel.id
@@ -181,7 +175,8 @@ class UploadService():
         self.dbhandler.insert_file(
             user_id, channel_id, file_name, self.convert_size(file_size), file_type, total_files
             )
-        elapsed_time = time.time() - starttime
+        elapsed_time = datetime.timedelta(seconds=time.time() - starttime)
+        elapsed_time = self.convert_time(elapsed_time)
         self.logger.info("All files uploaded successfully in %s", elapsed_time)
         await message.edit(content=f"All files uploaded successfully in {elapsed_time}")
         return True
@@ -207,6 +202,26 @@ class UploadService():
             size = f"{size_bytes} bytes"
 
         return size
+
+    def convert_time(self, timeval:float):
+        """converts a parsed timedelta into a better readable format
+        
+        Args:
+            timeval(float): the value to convert
+        
+        Returns:
+            str: formated value
+        """
+        time_format = "{d} days, {h} hours, {m} minutes, {s} seconds"
+
+        formatted_time = time_format.format(
+            d=timeval.days,
+            h=timeval.seconds // 3600,
+            m=(timeval.seconds // 60) % 60,
+            s=timeval.seconds % 60
+        )
+
+        return formatted_time
 
     async def main(self, ctx:commands.Context, path):
         """

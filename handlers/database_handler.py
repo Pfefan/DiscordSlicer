@@ -136,6 +136,23 @@ class HybridDBhandler:
             return self.cloud_db.get_numfiles(channel_id)
         return self.local_db.get_numfiles(channel_id)
 
+    def get_filesize(self, channel_id):
+        """
+        Gets the filesize value from the database
+
+        Parameters:
+        ----------
+        channel_id : str
+            the channel_id for which the numfiles value will be searched for
+
+        Returns:
+        -------
+        filesize (str)
+        """
+        if self.use_cloud_database:
+            return self.cloud_db.get_filesize(channel_id)
+        return self.local_db.get_filesize(channel_id)
+
     def delete_by_channel_id(self, channel_id):
         """
         Deletes a file from the database by channel id.
@@ -342,10 +359,36 @@ class LocalDBManager:
         return files
 
     def get_numfiles(self, channel_id):
+        """
+        Returns the number of saved files for a given channel ID.
+        
+        Args:
+            channel_id (int): The ID of the channel to get the number of saved files for.
+        
+        Returns:
+            int or None: The number of saved files for the given channel ID, or None if there are no saved files for the channel.
+        """
         session = self.session_maker()
         file = session.query(SavedFile).filter_by(channel_id=channel_id).first()
         if file is not None:
             return file.num_files
+        else:
+            return None
+    
+    def get_filesize(self, channel_id):
+        """
+        Returns the total file size of saved files for a given channel ID.
+        
+        Args:
+            channel_id (int): The ID of the channel to get the total file size of saved files for.
+        
+        Returns:
+            str or None: The total file size of saved files for the given channel ID in bytes, or None if there are no saved files for the channel.
+        """
+        session = self.session_maker()
+        file = session.query(SavedFile).filter_by(channel_id=channel_id).first()
+        if file is not None:
+            return file.file_size
         else:
             return None
 
@@ -533,8 +576,23 @@ class CloudDBManager():
         """
         result = self.collection.find_one({"channel_id": channel_id})
         if result:
-            self.logger.info("Found file with channel_id=%s", channel_id)
             return result.get("num_files")
+        self.logger.info("No file with channel_id=%s found", channel_id)
+        return None
+
+    def get_filesize(self, channel_id):
+        """
+        Gets the num files value from database entry
+
+        Parameters:
+        - channel_id: A string representing the ID of the channel where the file was uploaded.
+
+        Returns:
+        - The value of file_size if a document with the given channel_id was found, None otherwise.
+        """
+        result = self.collection.find_one({"channel_id": channel_id})
+        if result:
+            return result.get("file_size")
         self.logger.info("No file with channel_id=%s found", channel_id)
         return None
 

@@ -28,7 +28,7 @@ def test_create_saved_file(test_db):
     """
     Test the creation of a saved file in the database.
     """
-    file = SavedFile(user_id=1, channel_id=1, file_name="file1", file_size="100MB", file_type="txt")
+    file = SavedFile(user_id=1, channel_id=1, file_name="file1", file_size="100MB", file_type="txt", num_files="4")
     test_db.add(file)
     test_db.commit()
     assert file.id is not None
@@ -38,7 +38,7 @@ def test_retrieve_saved_file(test_db):
     """
     Test the retrieval of a saved file from the database.
     """
-    file = SavedFile(user_id=1, channel_id=1, file_name="file1", file_size="100MB", file_type="txt")
+    file = SavedFile(user_id=1, channel_id=1, file_name="file1", file_size="100MB", file_type="txt", num_files="4")
     test_db.add(file)
     test_db.commit()
 
@@ -49,13 +49,14 @@ def test_retrieve_saved_file(test_db):
     assert retrieved_file.file_name == file.file_name
     assert retrieved_file.file_size == file.file_size
     assert retrieved_file.file_type == file.file_type
+    assert retrieved_file.num_files == file.num_files
 
 
 def test_update_saved_file(test_db):
     """
     Test the update of a saved file in the database.
     """
-    file = SavedFile(user_id=1, channel_id=1, file_name="file1", file_size="100MB", file_type="txt")
+    file = SavedFile(user_id=1, channel_id=1, file_name="file1", file_size="100MB", file_type="txt", num_files="4")
     test_db.add(file)
     test_db.commit()
 
@@ -70,7 +71,7 @@ def test_delete_saved_file(test_db):
     """
     Test the deletion of a saved file from the database.
     """
-    file = SavedFile(user_id=1, channel_id=1, file_name="file1", file_size="100MB", file_type="txt")
+    file = SavedFile(user_id=1, channel_id=1, file_name="file1", file_size="100MB", file_type="txt", num_files="4")
     test_db.add(file)
     test_db.commit()
 

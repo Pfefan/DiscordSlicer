@@ -69,7 +69,7 @@ class HybridDBhandler:
         # config
         config = configparser.ConfigParser()
         config.read('config.ini')
-        use_cloud_database_str = config['DEFAULT'].get('use_cloud_database', 'false')
+        use_cloud_database_str = config['BOT'].get('use_cloud_database', 'false')
         self.use_cloud_database = use_cloud_database_str.lower() == 'true'
         # database Classes
         self.local_db = LocalDBManager()
@@ -510,8 +510,8 @@ class CloudDBManager():
         """
         self.config = config
 
-        cluster = MongoClient(config['DEFAULT']['connection_string'])
-        self.database = cluster[config['DEFAULT']['cluster_name']]
+        cluster = MongoClient(config['DATABASE']['connection_string'])
+        self.database = cluster[config['DATABASE']['cluster_name']]
         self.collection = self.database["file_list"]
         self.counters = self.database["counters"]
 

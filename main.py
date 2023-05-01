@@ -29,12 +29,18 @@ def get_config():
     if not os.path.isfile("config.ini"):
         config = configparser.ConfigParser()
 
-        config['DEFAULT'] = {
+        config['BOT'] = {
             'token': 'your-discord-bot-token-here',
             'application_id': 'your-applicationid-here',
+        }
+
+        config['DATABASE'] = {
             'use_cloud_database': 'False',
             'connection_string': 'your-connection-string-here',
             'cluster_name': 'your-cluster-name-here'
+        }
+        config['AUTH'] = {
+            'usernames': "your usernames here seperated by commas"
         }
         with open('config.ini', 'w+', encoding="utf-8") as configfile:
             config.write(configfile)
@@ -43,7 +49,7 @@ def get_config():
     else:
         config = configparser.ConfigParser()
         config.read('config.ini')
-        return config['DEFAULT']
+        return config
 
 
 class MCservers(commands.Bot):
@@ -54,9 +60,9 @@ class MCservers(commands.Bot):
         None.
     """
     def __init__(self) -> None:
-        config = get_config()
+        self.config = get_config()
         super().__init__(command_prefix = "-", intents = discord.Intents.all(),
-                         application_id = config["application_id"], help_command=None)
+                         application_id = self.config['BOT']["application_id"], help_command=None)
 
     async def setup_hook(self) -> None:
         """Loads the commandhandler extension and syncs the slash commands tree
@@ -85,4 +91,4 @@ if __name__ == "__main__":
     config_json = get_config()
     os.makedirs('files', exist_ok=True)
     bot = MCservers()
-    bot.run(config_json["token"])
+    bot.run(config_json['BOT']["token"])

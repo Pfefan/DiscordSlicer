@@ -235,6 +235,7 @@ class UploadService():
             bool: True if the upload was successful, False otherwise.
 
         """
+        await ctx.reply("Working on Upload ↓")
         text_channel = ctx.channel
         message = await text_channel.send("Preparing upload")
         os.makedirs('files/upload', exist_ok=True)

@@ -38,6 +38,30 @@ class Commandhandler(commands.Cog):
         self.delete_file = DeleteService()
         self.list_files = FileListService(bot)
 
+        self.config = bot.config
+
+    async def userauth(self, ctx: commands.Context):
+        """
+        Checks if the user which send a command is authenticated in the config file
+        
+        Args:
+        - ctx (commands.context): Message context
+        
+        Returns:
+        - bool: True if the user is authenticated, False if not
+        """
+        usernames = self.config["AUTH"]["usernames"]
+        usernames = [username.strip() for username in usernames.split(", ")]
+        
+        if str(ctx.author) in usernames:
+            return True
+        else:
+            embed = discord.Embed(title="Authentication Error",
+                              description="You are not authorized to use this command.",
+                              color=discord.Color.red())
+            await ctx.reply(embed=embed)
+            return False
+
     @commands.hybrid_command(
         name = "upload-file",
         description = "Uploads a file to discord",
@@ -51,8 +75,8 @@ class Commandhandler(commands.Cog):
         context of the command.
         - filepath (str): A string that represents the path of the file to be uploaded.
         """
-        await ctx.reply("Working on Upload ↓")
-        await self.upload_file.main(ctx, filepath)
+        if await self.userauth(ctx):
+            await self.upload_file.main(ctx, filepath)
 
     @commands.hybrid_command(
         name = "download-file",
@@ -68,7 +92,8 @@ class Commandhandler(commands.Cog):
         - file_selector (str): A string that represents the file identifier
         or the file name to be downloaded.
         """
-        await self.download_file.main(ctx, file_selector)
+        if await self.userauth(ctx):
+            await self.download_file.main(ctx, file_selector)
 
     @commands.hybrid_command(
         name = "delete-file",
@@ -84,7 +109,8 @@ class Commandhandler(commands.Cog):
         - file_selector (str): A string that represents the file identifier or the file name
         to be deleted.
         """
-        await self.delete_file.main(ctx, file_selector)
+        if await self.userauth(ctx):
+            await self.delete_file.main(ctx, file_selector)
 
     @commands.hybrid_command(
         name = "list-files",

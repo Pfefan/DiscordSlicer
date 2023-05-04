@@ -226,14 +226,23 @@ class DownloadService:
         Returns:
             str: formated value
         """
-        time_format = "{d} days, {h} hours, {m} minutes, {s} seconds"
 
-        formatted_time = time_format.format(
-            d=timeval.days,
-            h=timeval.seconds // 3600,
-            m=(timeval.seconds // 60) % 60,
-            s=timeval.seconds % 60
-        )
+        days = timeval.days
+        hours = timeval.seconds // 3600
+        minutes = (timeval.seconds // 60) % 60
+        seconds = timeval.seconds % 60
+
+        formatted_time = ""
+        if days > 0:
+            formatted_time += f"{days} days, "
+        if hours > 0:
+            formatted_time += f"{hours} hours, "
+        if minutes > 0:
+            formatted_time += f"{minutes} minutes, "
+        if seconds > 0:
+            formatted_time += f"{seconds} seconds"
+
+        formatted_time = formatted_time.rstrip(", ")
 
         return formatted_time
 

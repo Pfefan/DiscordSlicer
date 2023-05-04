@@ -69,7 +69,7 @@ class HybridDBhandler:
         # config
         config = configparser.ConfigParser()
         config.read('config.ini')
-        use_cloud_database_str = config['BOT'].get('use_cloud_database', 'false')
+        use_cloud_database_str = config['DATABASE'].get('use_cloud_database', 'false')
         self.use_cloud_database = use_cloud_database_str.lower() == 'true'
         # database Classes
         self.local_db = LocalDBManager()

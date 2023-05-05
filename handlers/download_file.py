@@ -46,12 +46,13 @@ class DownloadService:
         self.search_serv = SearchService()
         self.db_handler = HybridDBhandler()
         self.category_name = "UPLOAD"
+        self.message: discord.Message
         self.elapsed_time = 0
 
         os.makedirs("files/download", exist_ok=True)
 
     async def download_files(
-        self, ctx: commands.Context, message: discord.Message, channel_id: str
+        self, ctx: commands.Context, response_msg: discord.Message, channel_id: str
     ) -> bool:
 
         """
@@ -61,7 +62,7 @@ class DownloadService:
         ----------
         ctx : commands.Context
             The context in which the message was sent.
-        message : discord.Message
+        response_msg : discord.Message
             The message object that triggered the download.
         channel_id : str
             The ID of the channel to download files from.
@@ -73,7 +74,6 @@ class DownloadService:
         """
 
         filename = ""
-        edit_message:discord.Message = None
         file_count = 0
         download_size = 0
         remaining_time = 0
@@ -84,19 +84,22 @@ class DownloadService:
         category = discord.utils.get(ctx.guild.categories, name=self.category_name)
         if category is None:
             self.logger.warning("No category found with name %s", self.category_name)
-            edit_message = await message.edit(content=f"No category found with name {self.category_name}")
+            await response_msg.edit(content=f"No category found with name {self.category_name}")
             return False
 
         text_channel = discord.utils.get(category.channels, id=int(channel_id))
         if text_channel is None:
             self.logger.info("No text channel found with id %s", channel_id)
-            edit_message = await message.edit(content=f"No text channel found with id {channel_id}")
+            await response_msg.edit(content=f"No text channel found with id {channel_id}")
             return False
 
         filename = self.db_handler.find_name_by_channel_id(channel_id)
         self.logger.info("Downloading %s", filename)
 
-        edit_message = await message.edit(content=f"Downloading {filename}")
+        await response_msg.delete()
+        msg_channel = ctx.channel
+        self.message = await msg_channel.send(f"Preparing download for {filename}")
+
         total_files = self.db_handler.get_numfiles(channel_id)
         filesize = self.db_handler.get_filesize(channel_id)
         bytefilesize = self.convert_to_bytes(filesize)
@@ -106,7 +109,7 @@ class DownloadService:
         async for message in text_channel.history(limit=None):
             if len(message.attachments) > 0:
                 for attachment in message.attachments:
-                    await edit_message.edit(content=f"📥 Downloading {file_count}/{total_files}\n"
+                    await self.message.edit(content=f"📥 Downloading {file_count}/{total_files}\n"
                                                     f"💾 {self.convert_size(download_size)}/{filesize}\n"
                                                     f"⏳ ETA: {remaining_time}\n"
                                                     f"🚀 {self.convert_size(download_speed)}/s")
@@ -140,7 +143,7 @@ class DownloadService:
         self.logger.info("All files downloaded successfully in %s", elapsed_time)
         return True
 
-    async def merge_files(self, message: discord.Message, channel_id: str) -> bool:
+    async def merge_files(self, channel_id: str) -> bool:
         """
         Merges the downloaded files into a single file and saves it in the downloads folder.
 
@@ -160,7 +163,7 @@ class DownloadService:
         input_files = sorted(os.listdir(download_dir), key=lambda x: int(x.split("_")[-1]))
         if not input_files:
             self.logger.info("No input files found")
-            await message.edit(content="No input files found")
+            await self.message.edit(content="No input files found")
             return False
 
         output_filename = self.db_handler.find_fullname_by_channel_id(channel_id)
@@ -173,7 +176,7 @@ class DownloadService:
                     chunk_files.write(file.read())
 
         self.logger.info("Finished Downloading and merged files into your download folder in %s", self.elapsed_time)
-        await message.edit(content=f"Finished Downloading and merged files into your download folder in {self.elapsed_time}")
+        await self.message.edit(content=f"Finished Downloading and merged files into your download folder in {self.elapsed_time}")
         shutil.rmtree(os.path.join("files", "download", str(channel_id)))
         return True
     
@@ -257,15 +260,13 @@ class DownloadService:
         file : str
             The name or ID of the file to download and merge.
         """
-        first_msg = await ctx.send("Working on Download ↓")
+        response_msg = await ctx.reply(content="Working on Download ⏳")
         os.makedirs("files/download", exist_ok=True)
         file_id = await self.search_serv.main(ctx, file, self.category_name)
         if file_id:
-            text_channel = ctx.channel
-            message = await text_channel.send("Preparing download")
             self.logger.info("Found file in the channel with the id %s", file_id)
-            await self.download_files(ctx, message, file_id)
-            await self.merge_files(message, file_id)
+            await self.download_files(ctx, response_msg, file_id)
+            await self.merge_files(file_id)
         else:
             self.logger.info("Didn't find any file for the input: %s", file)
-            await first_msg.edit(content=f"Didn't find any file for the input: {file}")
+            await response_msg.edit(content=f"Didn't find any file for the input: {file}")

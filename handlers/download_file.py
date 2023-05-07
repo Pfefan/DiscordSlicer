@@ -73,7 +73,7 @@ class DownloadService:
             True if the files were downloaded successfully, False otherwise.
         """
 
-        filename = ""
+        file = self.db_handler.get_file_by_channelid(channel_id)
         file_count = 0
         download_size = 0
         remaining_time = 0
@@ -93,15 +93,15 @@ class DownloadService:
             await response_msg.edit(content=f"No text channel found with id {channel_id}")
             return False
 
-        filename = self.db_handler.find_name_by_channel_id(channel_id)
-        self.logger.info("Downloading %s", filename)
+        self.logger.info("Downloading %s", (f"{file['file_name']}.{file['file_type']}"))
 
         await response_msg.delete()
         msg_channel = ctx.channel
-        self.message = await msg_channel.send(f"Preparing download for {filename}")
+        self.message = await msg_channel.send(
+            f"Preparing download for {file['file_name']}.{file['file_type']}")
 
-        total_files = self.db_handler.get_numfiles(channel_id)
-        filesize = self.db_handler.get_filesize(channel_id)
+        total_files = file["num_files"]
+        filesize = file["file_size"]
         bytefilesize = self.convert_to_bytes(filesize)
 
 
@@ -159,6 +159,7 @@ class DownloadService:
         bool
             True if the files were merged and saved successfully, False otherwise.
         """
+        file = self.db_handler.get_file_by_channelid(channel_id)
         download_dir = os.path.join("files", "download", str(channel_id))
         input_files = sorted(os.listdir(download_dir), key=lambda x: int(x.split("_")[-1]))
         if not input_files:
@@ -166,7 +167,7 @@ class DownloadService:
             await self.message.edit(content="No input files found")
             return False
 
-        output_filename = self.db_handler.find_fullname_by_channel_id(channel_id)
+        output_filename = f"{file['file_name']}.{file['file_type']}"
         output_path = Path("~/Downloads").expanduser() / output_filename
 
         with open(output_path, 'wb') as chunk_files:

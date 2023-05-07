@@ -34,13 +34,12 @@ class FileListService:
         self.logger = ConfigLogger().setup()
         self.bot = bot
 
-    async def get_embed(self, page, ctx):
+    async def get_embed(self, page):
         """
         A method that gets an Embed object for the given page number.
 
         Args:
             page (int): The page number to get the Embed object for.
-            ctx (commands.Context): The context object for the current command invocation.
 
         Returns:
             tuple: A tuple containing the Embed object and the View object,
@@ -107,7 +106,7 @@ class FileListService:
                 """
                 if page > 1:
                     new_page = page - 1
-                    embed, view = await self.get_embed(new_page, ctx)
+                    embed, view = await self.get_embed(new_page)
                     await ctx.response.defer()
                     await ctx.message.edit(embed=embed, view=view)
 
@@ -121,7 +120,7 @@ class FileListService:
                 """
                 if page < num_pages:
                     new_page = page + 1
-                    embed, view = await self.get_embed(new_page, ctx)
+                    embed, view = await self.get_embed(new_page)
                     await ctx.response.defer()
                     await ctx.message.edit(embed=embed, view=view)
 
@@ -154,7 +153,7 @@ class FileListService:
             color=discord.Color.blurple()
         )
         message = await ctx.send(embed=embed)
-        embed, view = await self.get_embed(page, ctx)
+        embed, view = await self.get_embed(page)
         if embed is not None:
             await message.edit(content="", embed=embed, view=view)
 

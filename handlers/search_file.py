@@ -77,14 +77,14 @@ class SearchService:
         """
         # Check if file exists in database by ID
         if file.isdigit():
-            id_entry = self.db_handler.find_by_id(file)
+            id_entry = self.db_handler.get_channelid_by_fileid(file)
             if id_entry is not None:
                 return id_entry
 
         # If file not found by ID, try finding it by basename
         basename = os.path.basename(file)
         basename = os.path.splitext(basename)[0]
-        name_entry = self.db_handler.find_by_filename(basename)
+        name_entry = self.db_handler.get_channelid_by_filename(basename)
         if name_entry is not None:
             return name_entry
 
@@ -94,6 +94,6 @@ class SearchService:
             category = await ctx.guild.create_category(category_name)
         channel = discord.utils.get(category.channels, name=file)
         if channel is not None:
-            channel_entry = self.db_handler.find_by_channel_id(channel.id)
+            channel_entry = self.db_handler.get_channelid_by_channelid(channel.id)
             if channel_entry is not None:
                 return channel_entry

@@ -132,7 +132,7 @@ class HybridDBhandler:
         """
         if self.use_cloud_database:
             return self.cloud_db.get_channelid_by_id(file_id)
-        return self.local_db.get_channelid_by_fileid(file_id)
+        return self.local_db.get_channelid_by_id(file_id)
 
     def get_channelid_by_filename(self, filename:str):
         """
@@ -322,7 +322,7 @@ class LocalDBManager:
         session.close()
         return file.channel_id if file else None
 
-    def get_channelid_by_fileid(self, file_id):
+    def get_channelid_by_id(self, file_id):
         """
         Gets channel_id value from the database by the file_id
 

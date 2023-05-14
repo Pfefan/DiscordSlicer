@@ -34,13 +34,12 @@ class FileListService:
         self.logger = ConfigLogger().setup()
         self.bot = bot
 
-    async def get_embed(self, page, ctx):
+    async def get_embed(self, page):
         """
         A method that gets an Embed object for the given page number.
 
         Args:
             page (int): The page number to get the Embed object for.
-            ctx (commands.Context): The context object for the current command invocation.
 
         Returns:
             tuple: A tuple containing the Embed object and the View object,
@@ -50,9 +49,16 @@ class FileListService:
         self.logger.info("Getting embed for page %s...", page)
         files = self.db_handler.get_files()
 
+        embed = discord.Embed(title="FILES", description="List of uploaded files",
+                        color=discord.Color.blurple())
+
         if not files:
-            await ctx.send("There are no files stored in the database.")
-            return None, None
+            embed = discord.Embed(
+                title="List of uploaded files",
+                description="No Files stored in database",
+                color=discord.Color.blurple()
+            )
+            return embed, None
 
         chunks = [files[i:i+8] for i in range(0, len(files), 8)]
         num_pages = len(chunks)
@@ -61,8 +67,6 @@ class FileListService:
             page = 1
 
         current_chunk = chunks[page-1]
-        embed = discord.Embed(title="FILES", description="List of uploaded files",
-                              color=discord.Color.blurple())
 
         for file in current_chunk:
             user = await self.bot.fetch_user(file.user_id)
@@ -102,7 +106,7 @@ class FileListService:
                 """
                 if page > 1:
                     new_page = page - 1
-                    embed, view = await self.get_embed(new_page, ctx)
+                    embed, view = await self.get_embed(new_page)
                     await ctx.response.defer()
                     await ctx.message.edit(embed=embed, view=view)
 
@@ -116,7 +120,7 @@ class FileListService:
                 """
                 if page < num_pages:
                     new_page = page + 1
-                    embed, view = await self.get_embed(new_page, ctx)
+                    embed, view = await self.get_embed(new_page)
                     await ctx.response.defer()
                     await ctx.message.edit(embed=embed, view=view)
 
@@ -142,8 +146,14 @@ class FileListService:
             ctx (commands.Context): The context object of the command invocation.
             page (int, optional): The page number of the embed to retrieve. Defaults to 1.
         """
-        message = await ctx.send(content="Getting data..")
-        embed, view = await self.get_embed(page, ctx)
+
+        embed = discord.Embed(
+            title="List of uploaded files",
+            description="Getting data...",
+            color=discord.Color.blurple()
+        )
+        message = await ctx.send(embed=embed)
+        embed, view = await self.get_embed(page)
         if embed is not None:
             await message.edit(content="", embed=embed, view=view)
 

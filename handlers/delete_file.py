@@ -14,6 +14,7 @@ Classes:
 """
 import discord
 from discord.ext import commands
+from discord.ui import Button, View
 
 from logging_formatter import ConfigLogger
 from handlers.database_handler import HybridDBhandler
@@ -33,50 +34,108 @@ class DeleteService():
         self.db_handler = HybridDBhandler()
         self.category_name = "UPLOAD"
 
-
     async def delete_file(self, ctx:commands.Context, message:discord.Message, channel_id:int):
         """
-        Deletes the channel with the specified channel ID
-        and removes the corresponding entry from the database.
+        Deletes the file from the Discord server and database.
 
         Args:
-            ctx (discord.ext.commands.Context): The context of the command.
-            message (discord.Message): The message to edit after the channel has been deleted.
-            channel_id (str): The ID of the channel to delete.
+        - ctx (discord.ext.commands.Context): The context of the command.
+        - message (discord.Message): The message containing the file to be deleted.
+        - channel_id (int): The ID of the channel containing the file.
 
         Returns:
-            None
+        - None
         """
-        channel = await ctx.bot.fetch_channel(channel_id)
-        await channel.delete()
-        result = self.db_handler.delete_by_channel_id(channel_id)
-        if result:
-            await message.edit(content=f"Deleted {channel.name} with channel_id={channel_id}")
-        else:
-            await message.edit(content=f"No file with channel_id={channel_id} found")
+        filedata = self.db_handler.get_file_by_channelid(channel_id)
+        filename = f"{filedata['file_name']}.{filedata['file_type']}"
+        embed = discord.Embed(title="Delete File",
+                description="Do you really want to delete this file?",
+                color=0x90EE90)
+        embed.add_field(name="Selected File", value=filename)
+        embed.add_field(name="File Size", value=f"{filedata['file_size']}")
+        ok_btn = Button(label="Ok", style=discord.ButtonStyle.secondary,
+                                emoji="👍")
+        cancel_btn = Button(label="Cancel", style=discord.ButtonStyle.secondary,
+                            emoji="❌")
+
+        async def okbtn_callback(btn_ctx: commands.Context):
+            """
+            Callback function for the OK button.
+
+            Args:
+            - btn_ctx (discord.ext.commands.Context): The context of the button click.
+
+            Returns:
+            - None
+            """
+            await btn_ctx.response.defer()
+            channel = await ctx.bot.fetch_channel(channel_id)
+            await channel.delete()
+            result = self.db_handler.delete_by_channel_id(channel_id)
+            embed = discord.Embed(title="Delete File")
+            if result:
+                embed.description = f"Successfully deleted {filename}"
+                embed.colour = discord.Colour.green()
+                await message.edit(embed=embed, view=None)
+            else:
+                embed.description = f"No file with channel_id={channel_id} in the database found"
+                embed.colour = discord.Colour.red()
+                await message.edit(embed=embed, view=None)
+                await message.edit(content=f"No file with channel_id={channel_id} in the database found")
+            view.stop()
+
+        async def cancelbtn_callback(btn_ctx: commands.Context):
+            """
+            Callback function for the Cancel button.
+
+            Args:
+            - btn_ctx (discord.ext.commands.Context): The context of the button click.
+
+            Returns:
+            - None
+            """
+            await btn_ctx.response.defer()
+            embed = discord.Embed(title="Delete File", description="Canceled deletion",
+                                  colour=discord.Colour.red())
+            await message.edit(embed=embed, view=None)
+            view.stop()
+
+        ok_btn.callback = okbtn_callback
+        cancel_btn.callback = cancelbtn_callback
+
+        view = View()
+        view.add_item(ok_btn)
+        view.add_item(cancel_btn)
+
+        await message.edit(embed=embed, view=view)
+
 
     async def main(self, ctx:commands.Context, file_sel:str):
         """
-        Entry point of the DeleteService class. Deletes the channel associated
-        with the given file name or ID
-        and updates the database, or displays an error message if the file is not found.
+        This method is deleting a by the user selected file and then prompting for confirmation
+        before deleting the file. It takes in a Discord context object, `ctx`,
+        and a string `file_sel`, which is the file selector entered by the user.
 
         Parameters:
         -----------
-        ctx : discord.ext.commands.Context
-            The context in which the command was sent.
-        file_sel : str
-            The name or ID of the file to delete.
+        ctx: commands.Context
+            A context object representing the invocation context of the command.
+        file_sel: str
+            The name of the file to be deleted.
 
         Returns:
         --------
         None
         """
+        embed = discord.Embed(title="Delete File", description="Preparing deletion",
+                color=0x90EE90)
         channel_id = await self.search_serv.main(ctx, file_sel, self.category_name)
-        if channel_id is not None:
-            message = await ctx.send("Preparing deletion")
+        if channel_id:
+            message = await ctx.send(embed=embed)
             self.logger.info("Found file in the channel with the id %s", channel_id)
             await self.delete_file(ctx, message, channel_id)
         else:
             self.logger.info("Didnt find any file for the input: %s", file_sel)
-            await message.edit(content=f"Didnt find any file for the input: {file_sel}")
+            embed.color = discord.Color.red()
+            embed.description = f"Didnt find any file for the input: {file_sel}"
+            await ctx.send(embed=embed)

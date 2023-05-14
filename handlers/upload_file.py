@@ -58,7 +58,36 @@ class UploadService():
         self.dbhandler = HybridDBhandler()
         self.chunk_size = 26214400
         self.file_size = 0
+        self.embed: discord.Embed
         self.category_name = "UPLOAD"
+
+    async def main(self, ctx:commands.Context, path):
+        """
+        Perform the main operation of the upload service.
+
+        Args:
+            ctx (commands.Context): The context object representing the command invocation.
+            path (str): The path to the file to upload.
+
+        """
+        self.embed = discord.Embed(title="Upload", description="Working on Upload ⏳")
+        response_msg = await ctx.reply(embed=self.embed)
+        os.makedirs('files/upload', exist_ok=True)
+        if os.path.exists(path):
+            file_name, extension = os.path.splitext(os.path.basename(path))
+            success = self.split_file(path, file_name)
+            if success:
+                await self.upload_files(ctx, response_msg, path, file_name, extension)
+                shutil.rmtree(f"files/upload/{file_name}")
+            else:
+                self.embed.description = "Failed to split the file"
+                self.embed.color = discord.Color.red()
+                response_msg.edit(embed=self.embed)
+        else:
+            self.logger.error("File %s doesnt exist", path)
+            self.embed.description = f"File {path} doesnt exist"
+            self.embed.color = discord.Color.red()
+            await response_msg.edit(embed=self.embed)
 
     def split_file(self, path, filename):
         """
@@ -100,7 +129,7 @@ class UploadService():
         self.logger.error("only %s out of %s chunks were saved", chunks_saved, num_chunks)
         return False
 
-    async def upload_files(self, ctx, message, path, file_name, extension): # pylint: disable=too-many-arguments
+    async def upload_files(self, ctx, response_msg, path, file_name, extension): # pylint: disable=too-many-arguments
         """
         Uploads the files to Discord.
 
@@ -127,27 +156,38 @@ class UploadService():
             text_channel = await category.create_text_channel(channel_name)
         else:
             self.logger.error("File already exists")
-            await message.edit(content="File already exists")
+            await response_msg.edit(content="File already exists")
             return False
 
         directory = f'files/upload/{file_name}'
         files = os.listdir(directory)
         total_files = len(files)
+        conv_size = self.convert_size(self.file_size)
+        msg_channel = ctx.channel
+
         upload_size = 0
         upload_counter = 0
         remaining_time = 0
         upload_speed = 0
-        starttime = time.time()
 
         self.logger.info("Uploading %s files", total_files)
-        await message.edit(content=f"Uploading {total_files} files")
+        await response_msg.delete()
+        self.embed.description = f"Preparing upload for {file_name}.{extension}"
+        message = await msg_channel.send(embed=self.embed)
+
+        starttime = time.time()
+        self.embed.title = f"Uploading {file_name+extension}"
 
         for file in files:
             with open(os.path.join(directory, file), 'rb') as upload_file:
-                await message.edit(content=f"📤 Uploading {upload_counter}/{len(files)} files\n"
-                            f"💾 {self.convert_size(upload_size)}/{self.convert_size(self.file_size)}\n"
-                            f"⏳ ETA: {remaining_time}\n"
-                            f"🚀 {self.convert_size(upload_speed)}/s")
+                self.embed.description = (
+                    f"📤 File parts: {upload_counter}/{total_files}\n"
+                    f"💾 Remaining: {self.convert_size(upload_size)}/{conv_size}\n"
+                    f"⏳ ETA: {remaining_time}\n"
+                    f"🚀 {self.convert_size(upload_speed)}/s"
+                )
+                await message.edit(embed=self.embed)
+
                 chunck_starttime = time.time()
                 chunck_filename = os.path.basename(file)
                 discord_file = discord.File(upload_file, filename=chunck_filename)
@@ -175,10 +215,14 @@ class UploadService():
         self.dbhandler.insert_file(
             user_id, channel_id, file_name, self.convert_size(file_size), file_type, total_files
             )
-        elapsed_time = datetime.timedelta(seconds=time.time() - starttime)
-        elapsed_time = self.convert_time(elapsed_time)
+
+        elapsed_time = self.convert_time(
+            datetime.timedelta(seconds=time.time() - starttime)
+        )
         self.logger.info("All files uploaded successfully in %s", elapsed_time)
-        await message.edit(content=f"All files uploaded successfully in {elapsed_time}")
+        self.embed.title = "Finished Upload"
+        self.embed.description = f"for {file_name + extension}, in {elapsed_time}"
+        await message.edit(embed=self.embed)
         return True
 
     def convert_size(self, size_bytes):
@@ -198,6 +242,9 @@ class UploadService():
         elif size_bytes >= 1024*1024:
             size_mb = size_bytes / (1024*1024)
             size = f"{size_mb:.2f} MB"
+        elif size_bytes >= 1024:
+            size_kb = size_bytes / 1024
+            size = f"{size_kb:.2f} KB"
         else:
             size = f"{size_bytes} bytes"
 
@@ -212,40 +259,22 @@ class UploadService():
         Returns:
             str: formated value
         """
-        time_format = "{d} days, {h} hours, {m} minutes, {s} seconds"
 
-        formatted_time = time_format.format(
-            d=timeval.days,
-            h=timeval.seconds // 3600,
-            m=(timeval.seconds // 60) % 60,
-            s=timeval.seconds % 60
-        )
+        days = timeval.days
+        hours = timeval.seconds // 3600
+        minutes = (timeval.seconds // 60) % 60
+        seconds = timeval.seconds % 60
+
+        formatted_time = ""
+        if days > 0:
+            formatted_time += f"{days} days, "
+        if hours > 0:
+            formatted_time += f"{hours} hours, "
+        if minutes > 0:
+            formatted_time += f"{minutes} minutes, "
+        if seconds > 0:
+            formatted_time += f"{seconds} seconds"
+
+        formatted_time = formatted_time.rstrip(", ")
 
         return formatted_time
-
-    async def main(self, ctx:commands.Context, path):
-        """
-        Perform the main operation of the upload service.
-
-        Args:
-            ctx (commands.Context): The context object representing the command invocation.
-            path (str): The path to the file to upload.
-
-        Returns:
-            bool: True if the upload was successful, False otherwise.
-
-        """
-        await ctx.reply("Working on Upload ↓")
-        text_channel = ctx.channel
-        message = await text_channel.send("Preparing upload")
-        os.makedirs('files/upload', exist_ok=True)
-        if os.path.exists(path):
-            file_name, extension = os.path.splitext(os.path.basename(path))
-            success = self.split_file(path, file_name)
-            if success:
-                await self.upload_files(ctx, message, path, file_name, extension)
-                shutil.rmtree(f"files/upload/{file_name}")
-        else:
-            self.logger.error("File %s doesnt exist", path)
-            await message.edit(content=f"File {path} doesnt exist")
-            

@@ -61,29 +61,6 @@ def test_get_files(session):
     assert files[0].file_id == 1
     assert files[1].file_id == 2
 
-def test_get_numfiles(session):
-    """
-    Tests that the `get_numfiles` method returns the num_files associated with a given channel ID.
-
-    Args:
-        session (LocalDBManager): The LocalDBManager instance configured for testing.
-    """
-
-    session.insert_file(69, 420, "file1", "100 GB", "txt", 12)
-    num_files = session.get_numfiles(420)
-    assert num_files == 12
-
-def test_get_filesize(session):
-    """
-    Tests that the `get_filesize` method returns the filesize associated with a given channel ID.
-
-    Args:
-        session (LocalDBManager): The LocalDBManager instance configured for testing.
-    """
-    session.insert_file(69, 420, "file1", "100 GB", "txt", 12)
-    filesize = session.get_filesize(420)
-    assert filesize == "100 GB"
-
 def test_delete_by_channel_id(session):
     """
     Tests that the `find_by_id` method returns the channel ID associated with a given file ID.
@@ -102,11 +79,11 @@ def test_delete_by_channel_id(session):
     files = session.get_files()
     assert len(files) == 0
 
-def test_find_by_id(session):
+def test_get_channelid_by_id(session):
     """
-    Test the find_by_id method of the LocalDBManager class.
+    Test the get_channelid_by_id method of the LocalDBManager class.
 
-    This method tests whether the find_by_id method of the LocalDBManager class correctly
+    This method tests whether the get_channelid_by_id method of the LocalDBManager class correctly
     retrieves the channel ID associated with a file given its ID.
 
     Args:
@@ -118,14 +95,14 @@ def test_find_by_id(session):
     """
     session.insert_file(69, 420, "file1", 100, "txt", 12)
     file_id = session.get_files()[0].id
-    channel_id = session.find_by_id(file_id)
+    channel_id = session.get_channelid_by_id(file_id)
     assert channel_id == 420
 
-def test_find_by_filename(session):
+def test_get_channelid_by_filename(session):
     """
-    Test the find_by_filename method of the LocalDBManager class.
+    Test the get_channelid_by_filename method of the LocalDBManager class.
 
-    This method tests whether the find_by_filename method of the LocalDBManager class correctly
+    This method tests whether the get_channelid_by_filename method of the LocalDBManager class correctly
     retrieves the channel ID associated with a file given its name.
 
     Args:
@@ -136,14 +113,14 @@ def test_find_by_filename(session):
 
     """
     session.insert_file(69, 420, "file1", 100, "txt", 69)
-    channel_id = session.find_by_filename("file1")
+    channel_id = session.get_channelid_by_filename("file1")
     assert channel_id == 420
 
-def test_find_by_channel_id(session):
+def test_get_channelid_by_channelid(session):
     """
-    Test the find_by_channel_id method of the LocalDBManager class.
+    Test the get_channelid_by_channelid method of the LocalDBManager class.
 
-    This method tests whether the find_by_channel_id method of the LocalDBManager class correctly
+    This method tests whether the get_channelid_by_channelid method of the LocalDBManager class correctly
     retrieves the channel ID associated with a file given the channel ID.
 
     Args:
@@ -155,41 +132,5 @@ def test_find_by_channel_id(session):
     """
     session.insert_file(69, 420, "file1", 100, "txt", 420)
     file_id = session.get_files()[0].channel_id
-    channel_id = session.find_by_channel_id(file_id)
+    channel_id = session.get_channelid_by_channelid(file_id)
     assert channel_id == 420
-
-def test_find_name_by_channel_id(session):
-    """
-    Test the find_name_by_channel_id method of the LocalDBManager class.
-
-    This method tests whether the find_name_by_channel_id method of the LocalDBManager class
-    correctly retrieves the name of a file given the channel ID.
-
-    Args:
-        session (pytest.fixture): A fixture that sets up a testing database session.
-
-    Returns:
-        None
-
-    """
-    session.insert_file(69, 420, "file1", 100, "txt", 22)
-    file_name = session.find_name_by_channel_id(420)
-    assert file_name == "file1"
-
-def test_find_fullname_by_channel_id(session):
-    """
-    Test the find_fullname_by_channel_id method of the LocalDBManager class.
-
-    This method tests whether the find_fullname_by_channel_id method of the LocalDBManager class
-    correctly retrieves the full name of a file (including extension) given the channel ID.
-
-    Args:
-        session (pytest.fixture): A fixture that sets up a testing database session.
-
-    Returns:
-        None
-
-    """
-    session.insert_file(69, 420, "file1", 100, "txt", 12)
-    full_name = session.find_fullname_by_channel_id(420)
-    assert full_name == "file1.txt"

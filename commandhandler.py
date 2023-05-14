@@ -59,6 +59,7 @@ class Commandhandler(commands.Cog):
             embed = discord.Embed(title="Authentication Error",
                               description="You are not authorized to use this command.",
                               color=discord.Color.red())
+            embed.set_footer(text="Users can be authenticated in the config")
             await ctx.reply(embed=embed)
             return False
 

@@ -1,6 +1,6 @@
 # DiscordSlicer
 
-DiscordSlice is a program that allows you to easily upload large files to Discord by slicing them up into 25MB parts. Once the files are uploaded, you can download them or delete them.
+DiscordSlicer is a program that allows you to easily upload files larger than 25MB to Discord by slicing them up into 25MB parts. Once the files are uploaded, you can download them or delete them.
 
 ## Todo's
 

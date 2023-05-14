@@ -52,7 +52,7 @@ def get_config():
         return config
 
 
-class Botserver(commands.Bot):
+class Fileserver(commands.Bot):
     """
     Bot setup function.
 
@@ -90,5 +90,5 @@ class Botserver(commands.Bot):
 if __name__ == "__main__":
     config_json = get_config()
     os.makedirs('files', exist_ok=True)
-    bot = Botserver()
+    bot = Fileserver()
     bot.run(config_json['BOT']["token"])

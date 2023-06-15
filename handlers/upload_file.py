@@ -129,7 +129,7 @@ class UploadService():
         self.logger.error("only %s out of %s chunks were saved", chunks_saved, num_chunks)
         return False
 
-    async def upload_files(self, ctx, response_msg, path, file_name, extension): # pylint: disable=too-many-arguments
+    async def upload_files(self, ctx, response_msg: discord.Message, path, file_name, extension): # pylint: disable=too-many-arguments
         """
         Uploads the files to Discord.
 
@@ -156,7 +156,9 @@ class UploadService():
             text_channel = await category.create_text_channel(channel_name)
         else:
             self.logger.error("File already exists")
-            await response_msg.edit(content="File already exists")
+            self.embed.description = "File already exists"
+            self.embed.color = discord.Color.red()
+            await response_msg.edit(embed=self.embed)
             return False
 
         directory = f'files/upload/{file_name}'
@@ -221,6 +223,7 @@ class UploadService():
         )
         self.logger.info("All files uploaded successfully in %s", elapsed_time)
         self.embed.title = "Finished Upload"
+        self.embed.color = discord.Color.green()
         self.embed.description = f"for {file_name + extension}, in {elapsed_time}"
         await message.edit(embed=self.embed)
         return True

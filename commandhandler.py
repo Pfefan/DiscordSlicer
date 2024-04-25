@@ -52,7 +52,7 @@ class Commandhandler(commands.Cog):
         """
         usernames = self.config["AUTH"]["usernames"]
         usernames = [username.strip() for username in usernames.split(", ")]
-        
+
         if str(ctx.author) in usernames:
             return True
         else:
@@ -115,7 +115,7 @@ class Commandhandler(commands.Cog):
 
     @commands.hybrid_command(
         name = "list-files",
-        description = "List files which are uploaded",
+        description = "List all files which are uploaded",
         with_app_command = True)
 
     async def file_list (self, ctx: commands.Context):
@@ -128,18 +128,17 @@ class Commandhandler(commands.Cog):
         await self.list_files.main(ctx)
 
     @commands.hybrid_command(
-        name = "help",
-        description = "Displays an embed that shows all possible commands.",
-        with_app_command = True)
-
+        name="help",
+        description="Displays an embed with a list of all available commands and their descriptions.",
+        with_app_command=True
+    )
     async def help(self, ctx: commands.Context):
-        """A Discord slash command that displays an embed of all possible commands.
+        """A Discord slash command that displays an embed with a list of all available commands and their descriptions.
 
         Args:
-        - ctx (commands.Context): A context object that represents the invocation
-        context of the command.
+            ctx (commands.Context): A context object that represents the invocation context of the command.
         """
-        embed = discord.Embed(title="Available Commands", color=0xff69b4)
+        embed = discord.Embed(title="Available Commands", color=0xFFA500)
         embed.add_field(
             name="upload-file",
             value="Uploads a file to Discord",
@@ -147,7 +146,7 @@ class Commandhandler(commands.Cog):
         )
         embed.add_field(
             name="download-file",
-            value="Downloads a file from Discord with the file-id/channel_name/filename",
+            value="Downloads a file from Discord using the file-id/channel_name/filename",
             inline=False
         )
         embed.add_field(
@@ -157,11 +156,12 @@ class Commandhandler(commands.Cog):
         )
         embed.add_field(
             name="list-files",
-            value="Lists files that have been uploaded",
+            value="Lists all files that have been uploaded to Discord",
             inline=False
         )
 
         await ctx.send(embed=embed)
+
 
 
 async def setup(bot: commands.Bot) -> None:

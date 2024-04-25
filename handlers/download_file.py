@@ -73,7 +73,9 @@ class DownloadService:
                 await self.merge_files(file_id)
         else:
             self.logger.info("Didn't find any file for the input: %s", file)
-            await response_msg.edit(content=f"Didn't find any file for the input: {file}")
+            self.embed.description = f"Didn't find any file for the input: {file}"
+            self.embed.color = discord.Color.red()
+            await response_msg.edit(embed=self.embed)
 
 
     async def download_files(
@@ -109,6 +111,7 @@ class DownloadService:
         if category is None:
             self.logger.warning("No category found with name %s", self.category_name)
             self.embed.description = f"No category found with name {self.category_name}"
+            self.embed.color = discord.Color.red()
             await response_msg.edit(embed=self.embed)
             return False
 
@@ -116,6 +119,7 @@ class DownloadService:
         if text_channel is None:
             self.logger.info("No text channel found with id %s", channel_id)
             self.embed.description = f"No text channel found with id {channel_id}"
+            self.embed.color = discord.Color.red()
             await response_msg.edit(embed=self.embed)
             return False
 
@@ -215,6 +219,7 @@ class DownloadService:
         self.logger.info("Merged downloaded files and saved it to the users download folder in %s", self.elapsed_time)
         self.embed.title = "Finished Download"
         self.embed.description = f"for {file['file_name']}.{file['file_type']} in {self.elapsed_time}, saved into your downloads folder"
+        self.embed.color = discord.Color.green()
         await self.message.edit(embed=self.embed)
 
         shutil.rmtree(os.path.join("files", "download", str(channel_id)))
@@ -292,4 +297,3 @@ class DownloadService:
         formatted_time = formatted_time.rstrip(", ")
 
         return formatted_time
-
